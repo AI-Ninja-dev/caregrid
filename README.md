@@ -33,3 +33,7 @@ This app has no authentication, backend, device connection, patient messaging, c
 Production export, TypeScript, lint and three workflow/data tests pass. Full browser interaction and assistive-technology testing remain to be completed. Dependency audit reports two transitive findings through Next.js's bundled PostCSS; the automatic fix requires a major Next.js upgrade. Review this before server deployment. This release exports static files and has no server data processing.
 
 The repository remains private. Committing this app does not publish it or change repository visibility.
+
+## Care-task workflow
+
+The Tasks view adds sample role assignment, To do / In progress / Completed status changes, status filtering and session activity history. Tasks must have an assigned role before progressing; active or completed tasks cannot be left unassigned. Reopen a task to To do before removing its owner. Navigating between views preserves activity; refreshing or using Reset demo activity clears it. No notifications are sent and completion has no clinical effect. `lib/workflow.ts` contains the immutable transition logic, covered by two additional tests (five total).

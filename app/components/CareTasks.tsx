@@ -1,0 +1,18 @@
+'use client';
+import { useReducer, useState } from 'react';
+import { Check, ListChecks, History, ArrowUpRight } from 'lucide-react';
+import { initialWorkflow, updateWorkflow, owners, stages, type Owner, type Stage } from '../../lib/workflow';
+export default function CareTasks() {
+  const [state, dispatch] = useReducer(updateWorkflow, initialWorkflow);
+  const [filter, setFilter] = useState('All tasks');
+  const [announcement, setAnnouncement] = useState('');
+  const visible = state.tasks.filter(t => filter === 'All tasks' || t.stage === filter);
+  const completed = state.tasks.filter(t => t.stage === 'Completed').length;
+  return <>
+    <div className="task-summary"><div><ListChecks size={20} /><strong>{state.tasks.length - completed} open tasks</strong><span>{completed} completed in this demo session</span></div><p>Assignments represent sample roles. No team member is notified.</p></div>
+    <div className="task-layout"><section className="panel"><div className="panel-heading"><h2>Care tasks</h2><label><span className="sr-only">Filter tasks by status</span><select value={filter} onChange={e=>setFilter(e.target.value)}><option>All tasks</option>{stages.map(s=><option key={s}>{s}</option>)}</select></label></div>
+    <p className="muted">Assign an owner before starting or completing a task. Completed tasks can be reopened.</p><p role="status" className={announcement ? 'status' : 'sr-only'}>{announcement}</p>
+    {visible.length === 0 ? <div className="empty"><Check size={28}/><h3>No tasks in this view</h3><button className="secondary" onClick={()=>setFilter('All tasks')}>Show all tasks</button></div> : visible.map(task=><article className="task-card" key={task.id}><div className="task-title"><span className={`badge ${task.stage==='Completed'?'good':task.stage==='In progress'?'amber':''}`}>{task.stage}</span><small>{task.id}</small></div><h3>{task.title}</h3><p>{task.person} <span>· Fictional profile</span></p><div className="task-controls"><label>Assigned role<select value={task.owner} onChange={e=>{dispatch({type:'assign',id:task.id,owner:e.target.value as Owner});setAnnouncement(`${task.id}: assigned role updated.`);}}>{owners.map(owner=><option key={owner} disabled={owner==='Unassigned' && task.stage!=='To do'}>{owner}</option>)}</select></label><label>Task status<select value={task.stage} onChange={e=>{dispatch({type:'move',id:task.id,stage:e.target.value as Stage});setAnnouncement(`${task.id}: moved to ${e.target.value.toLowerCase()}. This records demo activity only.`);}}>{stages.map(stage=><option key={stage} disabled={stage!=='To do' && task.owner==='Unassigned'}>{stage}</option>)}</select></label></div>{task.owner==='Unassigned' && <small className="task-hint">Choose an assigned role to progress this task.</small>}</article>)}
+    </section><aside className="panel task-history"><div className="panel-heading"><h2><History size={18}/> Activity history</h2></div><p className="muted">Demo actions in this session, newest first. This is not a production audit record.</p>{state.history.length ? <ol>{state.history.map(entry=><li key={entry.id}><span className="history-marker"><ArrowUpRight size={13}/></span><div><strong>{entry.message}</strong><small>{entry.taskId} · Action {entry.id}</small></div></li>)}</ol> : <div className="empty"><History size={26}/><h3>Your activity appears here</h3><p>Assign or update a task to explore the workflow.</p></div>}</aside></div>
+  </>;
+}

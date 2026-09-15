@@ -77,3 +77,36 @@ test('navigation validates IDs and preserves patient review scopes',()=>{
  assert.equal(parseRoute('#/invalid').view,'Overview');
  assert.equal(routeHash(parseRoute('#/alerts?person=CG-002')),'#/alerts?person=CG-002');
 });
+
+import { emptySession, applyEvent, restoreSession, encodeSession } from '../lib/session.ts';
+test('demo event replay restores workflows and acknowledgements without storing records',()=>{
+ let session=applyEvent(emptySession(),{type:'workflow',action:{type:'from-alert',alertId:'A-001'}});
+ session=applyEvent(session,{type:'workflow',action:{type:'assign',id:'T-004',owner:'Clinical reviewer'}});
+ session=applyEvent(session,{type:'acknowledge',id:'A-002'});
+ const raw=encodeSession(session);
+ assert.ok(!raw.includes('Thandi'));
+ assert.deepEqual(restoreSession(raw).session,session);
+ assert.equal(restoreSession(raw).recovered,false);
+ assert.deepEqual(applyEvent(session,{type:'workflow',action:{type:'reset'}}),emptySession());
+});
+test('invalid or untrusted session payloads recover to safe demo state',()=>{
+ for(const raw of ['not json','null','{"version":8,"events":[]}',JSON.stringify({version:1,events:[{type:'workflow',action:{type:'assign',id:'T-001',owner:'Injected role'}}]})]){
+  const result=restoreSession(raw);assert.equal(result.recovered,true);assert.deepEqual(result.session,emptySession());
+ }
+ assert.equal(restoreSession(null).recovered,false);
+});
+
+import { validateAutomaticReading, readingIdentity } from '../lib/ingestion/reading.ts';
+test('automatic device contract requires complete measurements and explicit units',()=>{
+ const base={source:'yuwell-adapter',sourceEventId:'event-1',deviceId:'test-device',measuredAt:'2026-09-15T09:00:00+02:00'};
+ assert.equal(validateAutomaticReading({...base,measurement:{kind:'blood-pressure',systolic:120,diastolic:80,unit:'mmHg'}}).ok,true);
+ assert.equal(validateAutomaticReading({...base,measurement:{kind:'blood-pressure',systolic:120,unit:'mmHg'}}).ok,false);
+ assert.equal(validateAutomaticReading({...base,measurement:{kind:'glucose',value:6.1,unit:'mmol/L'}}).ok,true);
+ assert.equal(validateAutomaticReading({...base,measurement:{kind:'glucose',value:110,unit:'mg/dL'}}).ok,true);
+ assert.equal(validateAutomaticReading({...base,measurement:{kind:'glucose',value:6.1}}).ok,false);
+ assert.equal(validateAutomaticReading({...base,source:'manual',measurement:{kind:'spo2',value:98,unit:'%'}}).ok,false);
+ assert.equal(validateAutomaticReading({...base,measurement:{kind:'spo2',value:101,unit:'%'}}).ok,false);
+ assert.equal(validateAutomaticReading({...base,measuredAt:'2026-09-15T09:00:00',measurement:{kind:'spo2',value:98,unit:'%'}}).ok,false);
+ const valid=validateAutomaticReading({...base,measurement:{kind:'spo2',value:98,unit:'%'}});
+ if(valid.ok)assert.notEqual(readingIdentity(valid.reading),readingIdentity({...valid.reading,deviceId:'another-device'}));
+});

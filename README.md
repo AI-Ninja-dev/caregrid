@@ -30,16 +30,21 @@ This app has no authentication, backend, device connection, patient messaging, c
 
 ## Verification and known limits
 
-Production export, TypeScript, lint and three workflow/data tests pass. Full browser interaction and assistive-technology testing remain to be completed. Dependency audit reports two transitive findings through Next.js's bundled PostCSS; the automatic fix requires a major Next.js upgrade. Review this before server deployment. This release exports static files and has no server data processing.
+Production export, TypeScript, lint and automated workflow/browser tests pass. Full assistive-technology testing remains to be completed. Dependency audit reports two transitive findings through Next.js's bundled PostCSS; the automatic fix requires a major Next.js upgrade. Review this before server deployment. This release exports static files and has no server data processing.
 
 The repository remains private. Committing this app does not publish it or change repository visibility.
 
 ## Care-task workflow
 
-The Tasks view adds sample role assignment, To do / In progress / Completed status changes, status filtering and session activity history. Tasks must have an assigned role before progressing; active or completed tasks cannot be left unassigned. Reopen a task to To do before removing its owner. Navigating between views preserves activity; refreshing or using Reset demo activity clears it. No notifications are sent and completion has no clinical effect. `lib/workflow.ts` contains the immutable transition logic, covered by two additional tests (five total).
+The Tasks view adds sample role assignment, To do / In progress / Completed status changes, status filtering and session activity history. Tasks must have an assigned role before progressing; active or completed tasks cannot be left unassigned. Reopen a task to To do before removing its owner. Navigating between views preserves activity; using Reset demo activity clears it. Refresh preserves supported tab-session activity. No notifications are sent and completion has no clinical effect. `lib/workflow.ts` contains the immutable transition logic, covered by two additional tests (five total).
 
 ## Direct links and patient review queues
 
-Workspace views now have hash links, including `/#/people/CG-003` and `/#/alerts?person=CG-003`. Refresh retains the selected view; browser Back and Forward restore navigation without discarding in-memory workflow changes. Reload still resets demo activity. Invalid routes safely fall back to the overview or list. URLs contain fictional IDs only.
+Workspace views now have hash links, including `/#/people/CG-003` and `/#/alerts?person=CG-003`. Refresh retains the selected view; browser Back and Forward restore navigation without discarding in-memory workflow changes. Reload preserves demo workflow activity when session storage is available. Invalid routes safely fall back to the overview or list. URLs contain fictional IDs only.
 
 Person details can open a review queue scoped to that person, with an explicit option to show all people. Mobile navigation displays all seven destinations without sideways scrolling. Eight logic tests and three browser suites cover these behaviours alongside the existing workflows.
+
+
+## Automatic device integration
+
+The production target is automatic Yuwell BP, CGM and SpO2 readings only. No manual reading entry is planned. See docs/YUWELL-INTEGRATION.md for the internal reading contract, confirmed gaps and supplier requirements. This contract is not a working vendor connector.

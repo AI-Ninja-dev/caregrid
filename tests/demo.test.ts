@@ -40,3 +40,30 @@ test('active tasks retain owners and reopened tasks preserve history', () => {
   assert.equal(updateWorkflow(unassigned, {type:'assign',id:'T-002',owner:'Unassigned'}), unassigned);
   assert.equal(updateWorkflow(unassigned, {type:'move',id:'missing',stage:'Completed'}), unassigned);
 });
+
+test('alerts create one linked task even after completion and reset clears activity', () => {
+  const created = updateWorkflow(initialWorkflow, {type:'from-alert',alertId:'A-001'});
+  assert.equal(created.tasks.length, initialWorkflow.tasks.length + 1);
+  const task = created.tasks.at(-1)!;
+  assert.equal(task.alertId, 'A-001');
+  assert.equal(task.person, 'Thandi Mokoena');
+  assert.equal(task.owner, 'Unassigned');
+  assert.equal(updateWorkflow(created, {type:'from-alert',alertId:'A-001'}), created);
+  assert.equal(updateWorkflow(created, {type:'from-alert',alertId:'invalid'}), created);
+  const assigned = updateWorkflow(created, {type:'assign',id:task.id,owner:'Clinical reviewer'});
+  const completed = updateWorkflow(assigned, {type:'move',id:task.id,stage:'Completed'});
+  assert.equal(updateWorkflow(completed, {type:'from-alert',alertId:'A-001'}), completed);
+  assert.equal(updateWorkflow(completed, {type:'reset'}), initialWorkflow);
+});
+
+import { createDemoReport, csvCell } from '../lib/report.ts';
+test('CSV escapes spreadsheet formulas, quotes and includes session workflow state', () => {
+  assert.equal(csvCell('=2+2'), '"\'=2+2"');
+  assert.equal(csvCell('say "hello"'), '"say ""hello"""');
+  const linked = updateWorkflow(initialWorkflow, {type:'from-alert',alertId:'A-002'});
+  const report = createDemoReport(linked, ['A-001']);
+  assert.ok(report.includes('FICTIONAL DATA ONLY'));
+  assert.ok(report.includes('"T-004"'));
+  assert.ok(report.includes('"Acknowledged"'));
+  assert.ok(report.includes('Follow-up created from A-002'));
+});

@@ -1,8 +1,10 @@
 # Yuwell automatic integration
 
+The current architecture is brand-independent: see [Generic integration](GENERIC-INTEGRATION.md). Yuwell is an optional connector.
+
 ## Confirmed requirement
 
-Automatic readings only: Yuwell blood pressure, CGM and SpO2. Do not add manual clinical reading entry, spreadsheet import or fabricated data as a substitute for integration.
+Automatic readings only: blood pressure, glucose and SpO2 across supported brands. Do not add manual clinical reading entry, spreadsheet import or fabricated data as a substitute for integration.
 
 ## Current boundary
 

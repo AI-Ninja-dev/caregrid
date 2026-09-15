@@ -1,6 +1,6 @@
-/** Internal CareGrid contract, not a Yuwell API format. Only a verified adapter may produce this payload. */
+/** Brand-independent CareGrid contract. Validation alone does not authenticate a sender. */
 export type AutomaticReading = {
- source: 'yuwell-adapter'; sourceEventId: string; deviceId: string; measuredAt: string;
+ source: string; sourceEventId: string; deviceId: string; measuredAt: string;
  measurement: {kind:'blood-pressure';systolic:number;diastolic:number;unit:'mmHg';pulse?:number} |
  {kind:'glucose';value:number;unit:'mmol/L'|'mg/dL'} |
  {kind:'spo2';value:number;unit:'%';pulse?:number};
@@ -10,7 +10,7 @@ export function validateAutomaticReading(input:unknown):ReadingResult{
  const fail=(reason:string):ReadingResult=>({ok:false,reason});
  if(!input||typeof input!=='object')return fail('A reading object is required.');
  const data=input as Record<string,unknown>;
- if(data.source!=='yuwell-adapter')return fail('An automatic Yuwell adapter source is required.');
+ if(typeof data.source!=='string'||! /^[a-z0-9]+(?:-[a-z0-9]+)*-adapter$/.test(data.source)||data.source.length>100)return fail('A named automatic adapter source is required.');
  for(const key of ['sourceEventId','deviceId'])if(typeof data[key]!=='string'||!data[key].trim()||data[key].length>200)return fail(`${key} is required and must be at most 200 characters.`);
  if(typeof data.measuredAt!=='string'||!/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d+)?(?:Z|[+-]\d\d:\d\d)$/.test(data.measuredAt)||!Number.isFinite(Date.parse(data.measuredAt)))return fail('A timestamp with a timezone is required.');
  if(!data.measurement||typeof data.measurement!=='object')return fail('Measurement is required.');
@@ -25,6 +25,11 @@ export function validateAutomaticReading(input:unknown):ReadingResult{
   if(m.unit!=='%'||!numeric(m.value)||(m.value as number)>100)return fail('SpO2 must be a percentage from 0 to 100.');
  }else return fail('Unsupported measurement kind.');
  // Structure validation is not authentication, device verification or clinical interpretation.
- return {ok:true,reading:input as AutomaticReading};
+ const measurement: AutomaticReading['measurement'] = m.kind === 'blood-pressure'
+  ? {kind:'blood-pressure',systolic:m.systolic as number,diastolic:m.diastolic as number,unit:'mmHg',...(m.pulse===undefined?{}:{pulse:m.pulse as number})}
+  : m.kind === 'glucose'
+  ? {kind:'glucose',value:m.value as number,unit:m.unit as 'mmol/L'|'mg/dL'}
+  : {kind:'spo2',value:m.value as number,unit:'%',...(m.pulse===undefined?{}:{pulse:m.pulse as number})};
+ return {ok:true,reading:{source:data.source,sourceEventId:data.sourceEventId as string,deviceId:data.deviceId as string,measuredAt:data.measuredAt,measurement}};
 }
 export function readingIdentity(reading:AutomaticReading):string{return JSON.stringify([reading.source,reading.deviceId,reading.sourceEventId]);}

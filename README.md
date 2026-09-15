@@ -47,4 +47,4 @@ Person details can open a review queue scoped to that person, with an explicit o
 
 ## Automatic device integration
 
-The production target is automatic Yuwell BP, CGM and SpO2 readings only. No manual reading entry is planned. See docs/YUWELL-INTEGRATION.md for the internal reading contract, confirmed gaps and supplier requirements. This contract is not a working vendor connector.
+The production target is brand-independent automatic BP, glucose and SpO2 readings. No manual reading entry is planned. See docs/GENERIC-INTEGRATION.md for the common contract and trusted acceptance gate. Yuwell is one possible adapter, not a requirement. Live transport, authentication and database persistence are not implemented.

@@ -110,3 +110,15 @@ test('automatic device contract requires complete measurements and explicit unit
  const valid=validateAutomaticReading({...base,measurement:{kind:'spo2',value:98,unit:'%'}});
  if(valid.ok)assert.notEqual(readingIdentity(valid.reading),readingIdentity({...valid.reading,deviceId:'another-device'}));
 });
+
+import { acceptAutomaticReading, type IntegrationContext } from '../lib/ingestion/accept.ts';
+test('generic adapters bind readings to trusted organisations and device assignments',()=>{
+ const payload={source:'clinic-gateway-adapter',sourceEventId:'e1',deviceId:'d1',measuredAt:'2026-09-15T09:00:00Z',personId:'injected',measurement:{kind:'spo2',value:98,unit:'%'}};
+ const context:IntegrationContext={organisationId:'org1',adapterId:'clinic-gateway-adapter',enabled:true,devices:[{deviceId:'d1',personId:'p1',kinds:['spo2']}]};
+ const accepted=acceptAutomaticReading(payload,context);
+ assert.equal(accepted.ok,true);
+ if(accepted.ok){assert.equal(accepted.personId,'p1');assert.ok(!('personId' in accepted.reading));assert.deepEqual(acceptAutomaticReading(payload,context),accepted);const other=acceptAutomaticReading(payload,{...context,organisationId:'org2'});if(other.ok)assert.notEqual(other.key,accepted.key);}
+ for(const change of [{enabled:false},{adapterId:'other-adapter'},{devices:[]},{devices:[...context.devices,...context.devices]},{devices:[{deviceId:'d1',personId:'p1',kinds:[] as const}]}])assert.equal(acceptAutomaticReading(payload,{...context,...change}).ok,false);
+ assert.equal(acceptAutomaticReading({...payload,source:'manual'},context).ok,false);
+ assert.equal(validateAutomaticReading({...payload,source:'another-provider-adapter'}).ok,true);
+});

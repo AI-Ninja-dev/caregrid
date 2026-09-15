@@ -37,3 +37,9 @@ The repository remains private. Committing this app does not publish it or chang
 ## Care-task workflow
 
 The Tasks view adds sample role assignment, To do / In progress / Completed status changes, status filtering and session activity history. Tasks must have an assigned role before progressing; active or completed tasks cannot be left unassigned. Reopen a task to To do before removing its owner. Navigating between views preserves activity; refreshing or using Reset demo activity clears it. No notifications are sent and completion has no clinical effect. `lib/workflow.ts` contains the immutable transition logic, covered by two additional tests (five total).
+
+## Direct links and patient review queues
+
+Workspace views now have hash links, including `/#/people/CG-003` and `/#/alerts?person=CG-003`. Refresh retains the selected view; browser Back and Forward restore navigation without discarding in-memory workflow changes. Reload still resets demo activity. Invalid routes safely fall back to the overview or list. URLs contain fictional IDs only.
+
+Person details can open a review queue scoped to that person, with an explicit option to show all people. Mobile navigation displays all seven destinations without sideways scrolling. Eight logic tests and three browser suites cover these behaviours alongside the existing workflows.

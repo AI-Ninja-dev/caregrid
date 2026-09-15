@@ -46,3 +46,18 @@ test('people search and responsive layout work at phone and desktop widths', asy
   await page.setViewportSize({width:390,height:844});
   await page.screenshot({path:'test-results/caregrid-mobile.png',fullPage:true});
 });
+
+test('patient links survive refresh and scoped alert queues support browser history',async({page})=>{
+ await page.goto('/#/people/CG-003');
+ await expect(page.getByRole('heading',{name:'Naledi Dlamini',exact:true})).toBeVisible();
+ await page.getByRole('button',{name:'Review alerts for this person'}).click();
+ await expect(page).toHaveURL(/#\/alerts\?person=CG-003$/);
+ await expect(page.locator('.alert')).toHaveCount(1);
+ await expect(page.locator('.alert')).toContainText('Device connection needs attention');
+ await page.reload();await expect(page.locator('.patient-scope')).toContainText('Naledi Dlamini');
+ await page.getByRole('button',{name:'Show all people'}).click();await expect(page.locator('.alert')).toHaveCount(3);
+ await page.goBack();await expect(page.locator('.alert')).toHaveCount(1);
+ await page.goBack();await expect(page.getByRole('heading',{name:'Naledi Dlamini',exact:true})).toBeVisible();
+ await page.goto('/#/people/CG-004');await page.getByRole('button',{name:'Review alerts for this person'}).click();await expect(page.locator('.alert')).toHaveCount(0);await expect(page.getByRole('heading',{name:'No alerts'})).toBeVisible();
+ await page.goto('/#/unknown');await expect(page.getByRole('heading',{name:'A clearer view of care.'})).toBeVisible();
+});

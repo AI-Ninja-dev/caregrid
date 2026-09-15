@@ -67,3 +67,13 @@ test('CSV escapes spreadsheet formulas, quotes and includes session workflow sta
   assert.ok(report.includes('"Acknowledged"'));
   assert.ok(report.includes('Follow-up created from A-002'));
 });
+
+import { parseRoute, routeHash } from '../lib/navigation.ts';
+test('navigation validates IDs and preserves patient review scopes',()=>{
+ assert.deepEqual(parseRoute('#/people/CG-001'),{view:'People',personId:'CG-001',alertPersonId:null});
+ assert.deepEqual(parseRoute('#/alerts?person=CG-003'),{view:'Alerts',personId:null,alertPersonId:'CG-003'});
+ assert.equal(parseRoute('#/people/unknown').personId,null);
+ assert.equal(parseRoute('#/alerts?person=unknown').alertPersonId,null);
+ assert.equal(parseRoute('#/invalid').view,'Overview');
+ assert.equal(routeHash(parseRoute('#/alerts?person=CG-002')),'#/alerts?person=CG-002');
+});

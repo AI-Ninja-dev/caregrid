@@ -122,3 +122,5 @@ test('generic adapters bind readings to trusted organisations and device assignm
  assert.equal(acceptAutomaticReading({...payload,source:'manual'},context).ok,false);
  assert.equal(validateAutomaticReading({...payload,source:'another-provider-adapter'}).ok,true);
 });
+
+test('device timestamps reject impossible calendar dates',()=>{for(const measuredAt of ['2026-02-30T09:00:00Z','2026-09-16T24:01:00Z','2026-09-16T09:00:00+14:30'])assert.equal(validateAutomaticReading({source:'test-adapter',sourceEventId:'e1',deviceId:'d1',measuredAt,measurement:{kind:'spo2',value:98,unit:'%'}}).ok,false);});

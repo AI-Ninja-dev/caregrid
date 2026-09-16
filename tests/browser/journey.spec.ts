@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 test('care journey links alerts, owned tasks, history, report and reset', async ({page}) => {
-  await page.goto('/');
+  await page.goto('/demo/');
   await page.getByRole('button', {name:'Alerts', exact:false}).first().click();
   await page.getByRole('button', {name:'Create follow-up'}).first().click();
   await expect(page.getByRole('heading', {name:'Follow-through, made visible.'})).toBeVisible();
@@ -26,7 +26,7 @@ test('care journey links alerts, owned tasks, history, report and reset', async 
   await expect(page.getByRole('heading', {name:'Your activity appears here'})).toBeVisible();
 });
 test('people search and responsive layout work at phone and desktop widths', async ({page}) => {
-  await page.goto('/');
+  await page.goto('/demo/');
   await page.getByRole('button', {name:'People',exact:true}).click();
   await page.getByPlaceholder('Search name, ID or town').fill('not found');
   await expect(page.getByRole('heading', {name:'No matching people'})).toBeVisible();
@@ -48,7 +48,7 @@ test('people search and responsive layout work at phone and desktop widths', asy
 });
 
 test('patient links survive refresh and scoped alert queues support browser history',async({page})=>{
- await page.goto('/#/people/CG-003');
+ await page.goto('/demo/#/people/CG-003');
  await expect(page.getByRole('heading',{name:'Naledi Dlamini',exact:true})).toBeVisible();
  await page.getByRole('button',{name:'Review alerts for this person'}).click();
  await expect(page).toHaveURL(/#\/alerts\?person=CG-003$/);
@@ -58,17 +58,17 @@ test('patient links survive refresh and scoped alert queues support browser hist
  await page.getByRole('button',{name:'Show all people'}).click();await expect(page.locator('.alert')).toHaveCount(3);
  await page.goBack();await expect(page.locator('.alert')).toHaveCount(1);
  await page.goBack();await expect(page.getByRole('heading',{name:'Naledi Dlamini',exact:true})).toBeVisible();
- await page.goto('/#/people/CG-004');await page.getByRole('button',{name:'Review alerts for this person'}).click();await expect(page.locator('.alert')).toHaveCount(0);await expect(page.getByRole('heading',{name:'No alerts'})).toBeVisible();
- await page.goto('/#/unknown');await expect(page.getByRole('heading',{name:'A clearer view of care.'})).toBeVisible();
+ await page.goto('/demo/#/people/CG-004');await page.getByRole('button',{name:'Review alerts for this person'}).click();await expect(page.locator('.alert')).toHaveCount(0);await expect(page.getByRole('heading',{name:'No alerts'})).toBeVisible();
+ await page.goto('/demo/#/unknown');await expect(page.getByRole('heading',{name:'A clearer view of care.'})).toBeVisible();
 });
 
 test('session survives reload, resets and recovers from corrupt storage',async({page})=>{
- await page.goto('/#/alerts');await page.getByRole('button',{name:'Acknowledge',exact:true}).first().click();
+ await page.goto('/demo/#/alerts');await page.getByRole('button',{name:'Acknowledge',exact:true}).first().click();
  await page.reload();await expect(page.locator('.alert')).toHaveCount(2);
- await page.goto('/#/workspace');await page.getByRole('button',{name:'Reset demo activity'}).click();await page.reload();await page.getByRole('button',{name:'Alerts',exact:false}).first().click();await expect(page.locator('.alert')).toHaveCount(3);
+ await page.goto('/demo/#/workspace');await page.getByRole('button',{name:'Reset demo activity'}).click();await page.reload();await page.getByRole('button',{name:'Alerts',exact:false}).first().click();await expect(page.locator('.alert')).toHaveCount(3);
  await page.evaluate(()=>sessionStorage.setItem('caregrid-demo-session-v1','damaged'));await page.reload();await expect(page.getByText('Saved demo data could not be read. A fresh demo has been opened.')).toBeVisible();await expect(page.locator('.alert')).toHaveCount(3);
 });
 test('blocked storage leaves workflow usable with a visible limitation',async({page})=>{
  await page.addInitScript(()=>{Storage.prototype.setItem=()=>{throw new Error('Blocked')};Storage.prototype.getItem=()=>{throw new Error('Blocked')};});
- await page.goto('/#/alerts');await expect(page.getByText('Demo session: memory only')).toBeVisible();await page.getByRole('button',{name:'Acknowledge',exact:true}).first().click();await expect(page.locator('.alert')).toHaveCount(2);
+ await page.goto('/demo/#/alerts');await expect(page.getByText('Demo session: memory only')).toBeVisible();await page.getByRole('button',{name:'Acknowledge',exact:true}).first().click();await expect(page.locator('.alert')).toHaveCount(2);
 });

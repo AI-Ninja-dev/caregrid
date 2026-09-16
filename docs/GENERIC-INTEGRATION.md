@@ -28,8 +28,8 @@ Other measurements: `glucose` with `value` and `mmol/L` or `mg/dL`; `spo2` with 
 
 ## Production transport boundary
 
-The current site is a static export, with no receiving endpoint. A backend must authenticate each integration, load its organisation and active device assignments server-side, then call the acceptance gate. Never accept that context from the incoming payload. Store the reading and event key atomically under a unique constraint; acknowledge retries without duplicating readings. A repeated event ID with different content must be flagged, not silently overwritten.
+The Node backend now exposes POST /api/readings/. It authenticates a hashed bearer credential and X-CareGrid-Adapter header, loads enabled assignments server-side, and calls the acceptance gate. It stores the reading and event key atomically under a unique constraint. Retries return 200 without adding records; conflicting content returns 409. The current installation serves one organisation. See OPERATIONS.md for setup and deployment.
 
-The backend must also enforce request size and rate limits, credential rotation, consent and access controls, timestamp/freshness rules, device reassignment history and audit records. Resolve delayed readings against the assignment effective at measurement time. Invalid/future timestamps and unsupported quality states require explicit policy before live acceptance. No secrets or real patient data belong in browser storage.
+Request size limits, per-adapter rate limits, credential rotation, role checks, monitoring consent status and audit records are implemented. Resolve delayed readings against the assignment effective at measurement time. Invalid/future timestamps and unsupported quality states require explicit policy before live acceptance. No secrets or real patient data belong in browser storage.
 
-Implement vendor adapters only with verified documentation and test devices or provider sandbox access. No vendor integration, live ingestion, clinical alerting or storage is claimed by this contract.
+Implement vendor adapters only with verified documentation and test devices or provider sandbox access. The contract and backend do not supply vendor adapters or clinical alerting. Live device delivery still depends on the external connector.

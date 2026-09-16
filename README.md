@@ -1,50 +1,48 @@
 # CareGrid
 
-A care-team demonstration app for HomeClinicStore, built with Next.js, React and TypeScript.
+A connected-care workspace for HomeClinicStore, built with Next.js, TypeScript and a persistent SQLite backend. Designed for South African care teams. Readings arrive automatically from authenticated integrations; there is no manual reading-entry flow.
 
-## Run
+## Implemented
 
-Use Node.js 22.6 or newer. Run `npm ci` and `npm run dev -- --port 3001`. Open http://localhost:3001. For verification, run `npm run lint`, `npm test`, `npm run typecheck` and `npm run build`. Static production output is generated in `out/`.
+- First-run administrator setup, password sign-in, expiring server-side sessions and role checks.
+- People enrolment with recorded consent attestation and monitoring pause/resume.
+- Brand-independent integration registration, one-time bearer credentials, rotation and revocation.
+- Device enrolment with fixed person assignments and BP, glucose/CGM or SpO2 measurement types.
+- Authenticated `POST /api/readings/`, validation, atomic duplicate handling and conflicting-event rejection.
+- Persistent reading history, timestamps, CSV export, owned care tasks and an administrator audit view.
+- Team account creation, access disabling and password changes that revoke existing sessions.
+- A separate `/demo/` route for the original fictional experience. Production workspace data starts empty.
 
-## First release
+## Run locally
 
-- Responsive navigation and overview with derived review counts.
-- Searchable fictional people, programme filtering and empty-state recovery.
-- Person views with sample reading charts and accessible data tables.
-- Sample alert queue with acknowledgement, reopening and filtering.
-- Device availability, battery and latest-sample views.
-- Workspace information and resettable demo state.
+Node 22.16+ is required (24 LTS recommended).
 
-All names, devices, readings and tasks are fictional. The displayed date is a fixed sample day and times use SAST. Alert acknowledgement affects only page memory and resets on refresh; it does not contact a patient, change a clinical plan or resolve an incident. No clinical thresholds are implemented. Blood-pressure trends show systolic sample values only, not complete measurements.
+```sh
+npm ci
+# Copy .env.example to .env.local and configure it.
+npm run build
+npm run start -- --hostname 127.0.0.1 --port 3001
+```
 
-## Before real patient use
+Open http://127.0.0.1:3001 and create your administrator account. No default credentials are provided. Keep the local server bound to loopback while local setup is enabled. Database files, local environment settings and test records are excluded from Git.
 
-This app has no authentication, backend, device connection, patient messaging, clinical decision engine or emergency response service. Do not enter real health information. A production programme needs agreed requirements for identity, role permissions, consent, privacy, storage, audit trails, device provenance, clinical response rules and operational support. These are future work, not implemented capabilities.
+See [Operations](docs/OPERATIONS.md) for network hosting, backups, account management and release boundaries. This app now needs a Node server and persistent disk; GitHub Pages/static export cannot run it.
 
-## Structure
+## Integration
 
-- `app/page.tsx`: workspace views and client interaction.
-- `app/globals.css`: responsive visual system, keyboard focus and reduced-motion handling.
-- `lib/demo.ts`: typed fictional records and pure filtering/acknowledgement logic.
-- `tests/demo.test.ts`: search, workflow transition and sample-record integrity tests.
+Read [Generic integration](docs/GENERIC-INTEGRATION.md) for the payload format and [Operations](docs/OPERATIONS.md) for onboarding. [Yuwell research](docs/YUWELL-INTEGRATION.md) remains one possible connector path. A registered integration is not a vendor adapter: real delivery requires an approved gateway or documented supplier connection.
 
-## Verification and known limits
+## Checks
 
-Production export, TypeScript, lint and automated workflow/browser tests pass. Full assistive-technology testing remains to be completed. Dependency audit reports two transitive findings through Next.js's bundled PostCSS; the automatic fix requires a major Next.js upgrade. Review this before server deployment. This release exports static files and has no server data processing.
+```sh
+npm test
+npm run lint
+npm run build
+npm run test:browser
+```
 
-The repository remains private. Committing this app does not publish it or change repository visibility.
+Browser tests start an isolated server on port 3010 and use a separate test database. They require Chrome. CI installs Chromium and selects that browser through `CI`.
 
-## Care-task workflow
+## Release boundaries
 
-The Tasks view adds sample role assignment, To do / In progress / Completed status changes, status filtering and session activity history. Tasks must have an assigned role before progressing; active or completed tasks cannot be left unassigned. Reopen a task to To do before removing its owner. Navigating between views preserves activity; using Reset demo activity clears it. Refresh preserves supported tab-session activity. No notifications are sent and completion has no clinical effect. `lib/workflow.ts` contains the immutable transition logic, covered by two additional tests (five total).
-
-## Direct links and patient review queues
-
-Workspace views now have hash links, including `/#/people/CG-003` and `/#/alerts?person=CG-003`. Refresh retains the selected view; browser Back and Forward restore navigation without discarding in-memory workflow changes. Reload preserves demo workflow activity when session storage is available. Invalid routes safely fall back to the overview or list. URLs contain fictional IDs only.
-
-Person details can open a review queue scoped to that person, with an explicit option to show all people. Mobile navigation displays all seven destinations without sideways scrolling. Eight logic tests and three browser suites cover these behaviours alongside the existing workflows.
-
-
-## Automatic device integration
-
-The production target is brand-independent automatic BP, glucose and SpO2 readings. No manual reading entry is planned. See docs/GENERIC-INTEGRATION.md for the common contract and trusted acceptance gate. Yuwell is one possible adapter, not a requirement. Live transport, authentication and database persistence are not implemented.
+This is a functional single-workspace release, not a completed clinical monitoring service. Vendor adapters, native Bluetooth pairing, clinical alert rules, patient notifications, emergency response, MFA/SSO, automated retention and deletion are not implemented. Reports show the most recent 500 readings; the database retains older records. Validate hosting, access controls, privacy processes, backups and device delivery before using real patient information.

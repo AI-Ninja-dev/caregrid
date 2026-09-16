@@ -11,6 +11,8 @@ A connected-care workspace for HomeClinicStore, built with Next.js, TypeScript a
 - Authenticated `POST /api/readings/`, validation, atomic duplicate handling and conflicting-event rejection.
 - Persistent reading history, timestamps, CSV export, owned care tasks and an administrator audit view.
 - Team account creation, access disabling and password changes that revoke existing sessions.
+- Persistent care plans with owners, review dates, versioned edits, review history and linked follow-up tasks.
+- Administrator-issued single-use account recovery links and verified online database backups.
 - A separate `/demo/` route for the original fictional experience. Production workspace data starts empty.
 
 ## Run locally
@@ -39,6 +41,7 @@ npm test
 npm run lint
 npm run build
 npm run test:browser
+npm run backup -- /path/to/protected-backups
 ```
 
 Browser tests start an isolated server on port 3010 and use a separate test database. They require Chrome. CI installs Chromium and selects that browser through `CI`.

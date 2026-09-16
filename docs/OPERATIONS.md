@@ -24,7 +24,17 @@ Incoming data before device enrolment or over five minutes in the future is reje
 
 ## Backups and recovery
 
-Use SQLite's online backup facility for live backups, or stop the server cleanly before copying the database. Do not copy only the main file while WAL writes are active. Store encrypted backups outside the application host, restrict access and test restoring into a separate instance. Keep deployment configuration and operator credentials in your secret manager. There is no email-based password recovery; retain another administrator account and a controlled operator recovery procedure.
+Run `npm run backup -- /path/to/protected-backups` for an online SQLite backup. The command reads `.env.local`, creates a unique directory, verifies SQLite integrity and writes a SHA-256 manifest. It never overwrites existing backups. A failed/incomplete backup is not marked complete. Store encrypted copies outside the application host and restrict access; the command does not encrypt the backup itself. It uses Node's [SQLite backup API](https://nodejs.org/api/sqlite.html#sqlitebackupsourceDb-path-options).
+
+To restore, stop the app, retain the current database and WAL files as an incident snapshot, then configure `CAREGRID_DB_PATH` to a separate restored copy. Verify the manifest hash and launch an isolated instance first. Clear restored sessions and recovery tokens before returning a restored service to users. Do not copy only the main database file while WAL writes are active.
+
+Administrators can issue a one-time recovery link for another active account after confirming their own password. The link expires after 30 minutes, revokes existing sessions when issued, and can set a new password once. It is shown once to the administrator; no email is sent. Share it through an approved secure channel. Disabled accounts cannot recover. Keep a second administrator account and an operator recovery procedure for loss of all administrator credentials.
+
+## Care plans
+
+The signed-in Care plans view stores a person's agreed goals, an active team owner, review cadence, next review date and status. Team members can record review notes and create linked follow-up tasks. Task creation is idempotent for each plan version. Edits and reviews use version checks to reject stale updates; refresh and re-open the editor after a conflict. Review history persists independently of the current plan text. Due dates use the South African calendar day. A due review is a workflow reminder, not a medical alert. Plans do not generate treatment recommendations or thresholds.
+
+The legacy `/plans/` page remains a separately labelled fictional care-plan demo; signed-in operational plans are under `/#/care-plans`.
 
 ## Current limits and release gates
 

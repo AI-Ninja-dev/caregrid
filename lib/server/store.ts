@@ -10,6 +10,11 @@ type Row = Record<string, string | number | null>;
 export class AppError extends Error { status: number; constructor(message: string, status = 400) { super(message); this.status = status; } }
 export const hash = (value: string) => createHash('sha256').update(value).digest('hex');
 const token = () => randomBytes(32).toString('base64url');
+function reviewDate(value: unknown): string {
+  const date = field(value, 'Next review date', 10);
+  if (!/^\d{4}-\d\d-\d\d$/.test(date) || !Number.isFinite(Date.parse(date)) || new Date(date).toISOString().slice(0,10) !== date) throw new AppError('Enter a valid review date.');
+  return date;
+}
 function passwordHash(password: string) {
   const salt = token();
   return `${salt}:${scryptSync(password, salt, 64).toString('hex')}`;
@@ -37,6 +42,10 @@ export class Store {
       CREATE INDEX IF NOT EXISTS readings_time ON readings(measured_at DESC);
       CREATE TABLE IF NOT EXISTS tasks(id TEXT PRIMARY KEY,person_id TEXT NOT NULL REFERENCES people(id),title TEXT NOT NULL,owner TEXT REFERENCES users(id),stage TEXT NOT NULL,created_at TEXT NOT NULL);
       CREATE TABLE IF NOT EXISTS audit(id INTEGER PRIMARY KEY AUTOINCREMENT,actor TEXT NOT NULL,action TEXT NOT NULL,subject TEXT NOT NULL,at TEXT NOT NULL);
+      CREATE TABLE IF NOT EXISTS care_plans(id TEXT PRIMARY KEY,person_id TEXT NOT NULL REFERENCES people(id),focus TEXT NOT NULL,owner TEXT NOT NULL REFERENCES users(id),cadence TEXT NOT NULL,goals TEXT NOT NULL,next_review TEXT NOT NULL,status TEXT NOT NULL,version INTEGER NOT NULL DEFAULT 1,created_at TEXT NOT NULL,updated_at TEXT NOT NULL);
+      CREATE TABLE IF NOT EXISTS plan_reviews(id TEXT PRIMARY KEY,plan_id TEXT NOT NULL REFERENCES care_plans(id),author TEXT NOT NULL REFERENCES users(id),note TEXT NOT NULL,at TEXT NOT NULL);
+      CREATE TABLE IF NOT EXISTS plan_tasks(plan_id TEXT NOT NULL REFERENCES care_plans(id),version INTEGER NOT NULL,task_id TEXT NOT NULL REFERENCES tasks(id),PRIMARY KEY(plan_id,version));
+      CREATE TABLE IF NOT EXISTS recovery_tokens(hash TEXT PRIMARY KEY,user_id TEXT NOT NULL REFERENCES users(id),expires INTEGER NOT NULL);
       CREATE TABLE IF NOT EXISTS limits(key TEXT PRIMARY KEY,count INTEGER NOT NULL,until INTEGER NOT NULL);`);
     if (!this.db.prepare('PRAGMA table_info(users)').all().some(column => column.name === 'active')) this.db.exec('ALTER TABLE users ADD COLUMN active INTEGER NOT NULL DEFAULT 1');
   }
@@ -98,12 +107,15 @@ export class Store {
       integrations: this.db.prepare('SELECT id,name,enabled,created_at FROM integrations ORDER BY name').all(),
       readings: this.db.prepare('SELECT * FROM readings ORDER BY measured_at DESC LIMIT 500').all().map(row => ({ ...row, payload: JSON.parse(String(row.payload)) })),
       tasks: this.db.prepare('SELECT * FROM tasks ORDER BY created_at DESC').all(),
+      plans: this.db.prepare('SELECT * FROM care_plans ORDER BY next_review,id').all(),
+      planReviews: this.db.prepare('SELECT * FROM plan_reviews ORDER BY at DESC').all(),
+      planTasks: this.db.prepare('SELECT * FROM plan_tasks').all(),
       users: this.db.prepare('SELECT id,email,role,active FROM users ORDER BY email').all(),
       audit: user.role === 'admin' ? this.db.prepare('SELECT * FROM audit ORDER BY id DESC LIMIT 100').all() : [],
     };
   }
   mutate(user: User, data: Record<string, unknown>) {
-    if (user.role !== 'admin' && !['task', 'task-update', 'password'].includes(String(data.action))) throw new AppError('Administrator access is required.', 403);
+    if (user.role !== 'admin' && !['task', 'task-update', 'password', 'plan', 'plan-update', 'plan-review', 'plan-task'].includes(String(data.action))) throw new AppError('Administrator access is required.', 403);
     return this.transaction(() => {
       const id = randomUUID(), now = new Date().toISOString();
       let subject: string = id;
@@ -148,6 +160,47 @@ export class Store {
         if (owner && !this.db.prepare('SELECT id FROM users WHERE id=? AND active=1').get(owner)) throw new AppError('Active owner not found.');
         if (data.stage !== 'To do' && !owner) throw new AppError('Assign an owner before progressing a task.');
         if (!this.db.prepare('UPDATE tasks SET owner=?,stage=? WHERE id=?').run(owner, String(data.stage), subject).changes) throw new AppError('Task not found.', 404);
+      } else if (data.action === 'plan' || data.action === 'plan-update') {
+        const existing = data.action === 'plan-update' ? this.planVersion(data.id, data.version) : null;
+        const personId = existing ? String(existing.person_id) : field(data.personId, 'Person');
+        if (!existing || data.status !== 'Paused') this.activePerson(personId);
+        const owner = field(data.owner, 'Plan owner');
+        if (!this.db.prepare('SELECT id FROM users WHERE id=? AND active=1').get(owner)) throw new AppError('Select an active plan owner.');
+        if (!['Active','Needs review','Paused'].includes(String(data.status))) throw new AppError('Choose a valid plan status.');
+        const values = [field(data.focus,'Plan focus'),owner,field(data.cadence,'Review cadence'),field(data.goals,'Goals',2000),reviewDate(data.nextReview),String(data.status)];
+        if (existing) {
+          subject = String(existing.id);
+          this.db.prepare('UPDATE care_plans SET focus=?,owner=?,cadence=?,goals=?,next_review=?,status=?,version=version+1,updated_at=? WHERE id=?').run(...values,now,subject);
+        } else this.db.prepare('INSERT INTO care_plans VALUES(?,?,?,?,?,?,?,?,1,?,?)').run(id,personId,...values,now,now);
+      } else if (data.action === 'plan-review') {
+        const plan = this.planVersion(data.id, data.version); subject = String(plan.id);
+        this.activePerson(plan.person_id);
+        if (plan.status === 'Paused') throw new AppError('Resume the plan before recording a review.');
+        const next = reviewDate(data.nextReview);
+        this.db.prepare('INSERT INTO plan_reviews VALUES(?,?,?,?,?)').run(id,subject,user.id,field(data.note,'Review note',2000),now);
+        this.db.prepare("UPDATE care_plans SET next_review=?,status='Active',version=version+1,updated_at=? WHERE id=?").run(next,now,subject);
+      } else if (data.action === 'plan-task') {
+        subject = field(data.id,'Plan');
+        const prior = this.db.prepare('SELECT task_id FROM plan_tasks WHERE plan_id=? AND version=?').get(subject, Number(data.version));
+        if (prior) return {taskId:prior.task_id};
+        const plan = this.planVersion(subject,data.version);
+        this.activePerson(plan.person_id);
+        if (plan.status === 'Paused') throw new AppError('Resume the plan before creating a follow-up.');
+        if (!this.db.prepare('SELECT id FROM users WHERE id=? AND active=1').get(plan.owner)) throw new AppError('Assign an active plan owner first.');
+        this.db.prepare('INSERT INTO tasks VALUES(?,?,?,?,?,?)').run(id,plan.person_id,`Care plan: ${plan.focus}`,plan.owner,'To do',now);
+        this.db.prepare('INSERT INTO plan_tasks VALUES(?,?,?)').run(subject,Number(plan.version),id);
+        result = {taskId:id};
+      } else if (data.action === 'recovery') {
+        const own = this.db.prepare('SELECT password FROM users WHERE id=?').get(user.id)!;
+        if (!matches(field(data.currentPassword,'Your password',256),String(own.password))) throw new AppError('Your password is incorrect.');
+        subject=field(data.id,'Account');
+        if (subject===user.id) throw new AppError('Use Change your password for your own account.');
+        if (!this.db.prepare('SELECT id FROM users WHERE id=? AND active=1').get(subject)) throw new AppError('Select an active account.');
+        const recoveryToken=token();
+        this.db.prepare('DELETE FROM recovery_tokens WHERE user_id=? OR expires<?').run(subject,Date.now());
+        this.db.prepare('INSERT INTO recovery_tokens VALUES(?,?,?)').run(hash(recoveryToken),subject,Date.now()+30*60_000);
+        this.db.prepare('DELETE FROM sessions WHERE user_id=?').run(subject);
+        result={recoveryToken};
       } else if (data.action === 'user') {
         const added = this.createUser(data.email, data.password, data.role); subject = added.id;
       } else if (data.action === 'user-status') {
@@ -156,6 +209,7 @@ export class Store {
         if (typeof data.active !== 'boolean') throw new AppError('Choose a valid status.');
         if (!this.db.prepare('UPDATE users SET active=? WHERE id=?').run(Number(data.active), subject).changes) throw new AppError('Account not found.', 404);
         this.db.prepare('DELETE FROM sessions WHERE user_id=?').run(subject);
+        this.db.prepare('DELETE FROM recovery_tokens WHERE user_id=?').run(subject);
       } else if (data.action === 'password') {
         subject = user.id;
         const row = this.db.prepare('SELECT password FROM users WHERE id=?').get(user.id)!;
@@ -164,9 +218,30 @@ export class Store {
         if (password.length < 14) throw new AppError('Use a password of at least 14 characters.');
         this.db.prepare('UPDATE users SET password=? WHERE id=?').run(passwordHash(password), user.id);
         this.db.prepare('DELETE FROM sessions WHERE user_id=?').run(user.id);
+        this.db.prepare('DELETE FROM recovery_tokens WHERE user_id=?').run(user.id);
       } else throw new AppError('Unsupported action.');
       this.audit(user.id, String(data.action), subject);
       return result;
+    });
+  }
+  planVersion(id: unknown, version: unknown) {
+    const plan = this.db.prepare('SELECT * FROM care_plans WHERE id=?').get(field(id,'Plan')) as Row | undefined;
+    if (!plan) throw new AppError('Care plan not found.',404);
+    if (!Number.isSafeInteger(Number(version)) || Number(version)!==plan.version) throw new AppError('This plan changed. Refresh and review the latest version before saving.',409);
+    return plan;
+  }
+  recover(recoveryToken: unknown, newPassword: unknown) {
+    this.limit('recovery:global',30,15*60_000);
+    const digest=hash(field(recoveryToken,'Recovery token',100));
+    const password=field(newPassword,'New password',256);
+    if(password.length<14)throw new AppError('Use a password of at least 14 characters.');
+    return this.transaction(()=>{
+      const recovery=this.db.prepare('SELECT user_id FROM recovery_tokens JOIN users ON users.id=user_id WHERE hash=? AND expires>? AND active=1').get(digest,Date.now());
+      if(!recovery)throw new AppError('Recovery link is invalid or expired.',400);
+      this.db.prepare('UPDATE users SET password=? WHERE id=?').run(passwordHash(password),recovery.user_id);
+      this.db.prepare('DELETE FROM recovery_tokens WHERE user_id=?').run(recovery.user_id);
+      this.db.prepare('DELETE FROM sessions WHERE user_id=?').run(recovery.user_id);
+      this.audit(String(recovery.user_id),'account.recovered',String(recovery.user_id));
     });
   }
   activePerson(id: unknown) {

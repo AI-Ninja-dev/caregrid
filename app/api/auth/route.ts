@@ -11,6 +11,7 @@ export async function POST(request: NextRequest) {
   try {
     sameOrigin(request);
     const data = await body(request);
+    if (data.action === 'recover') { store().recover(data.recoveryToken, data.password); return json({ ok: true }); }
     if (data.action === 'setup') {
       const setup = process.env.CAREGRID_SETUP_TOKEN;
       const local = process.env.CAREGRID_ALLOW_LOCAL_SETUP === 'true' && ['localhost', '127.0.0.1', '[::1]'].includes(request.nextUrl.hostname);

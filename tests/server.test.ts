@@ -5,6 +5,43 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
+test('stored care plans enforce ownership, version checks and idempotent task links',()=>{
+ const {s,u,p}=fixture();
+ try{
+  const fields={action:'plan',personId:p.id,focus:'Device support',owner:u.id,cadence:'Weekly',goals:'Review connectivity with the care team',nextReview:'2026-10-01',status:'Active'};
+  assert.throws(()=>s.mutate(u,{...fields,owner:'missing'}));
+  assert.throws(()=>s.mutate(u,{...fields,nextReview:'2026-02-30'}));
+  s.mutate(u,fields);const plan=s.snapshot(u).plans[0];
+  const task=s.mutate(u,{action:'plan-task',id:plan.id,version:1});
+  assert.deepEqual(s.mutate(u,{action:'plan-task',id:plan.id,version:1}),task);
+  assert.equal(s.snapshot(u).tasks.length,1);
+  s.mutate(u,{action:'plan-review',id:plan.id,version:1,note:'Connection route reviewed',nextReview:'2026-10-08'});
+  assert.equal(s.snapshot(u).planReviews.length,1);
+  assert.equal(s.snapshot(u).plans[0].version,2);
+  assert.throws(()=>s.mutate(u,{...fields,action:'plan-update',id:plan.id,version:1}));
+  s.mutate(u,{...fields,action:'plan-update',id:plan.id,version:2,status:'Paused'});
+  assert.throws(()=>s.mutate(u,{action:'plan-task',id:plan.id,version:3}));
+ }finally{s.db.close();}
+});
+
+test('recovery tokens are administrator-issued, expiring, single-use and revoke sessions',()=>{
+ const {s,u}=fixture();
+ try{
+  const reviewer=s.createUser('recover@example.test','recovery-test-password','reviewer');
+  const session=s.login(reviewer.email,'recovery-test-password');
+  assert.throws(()=>s.mutate(reviewer,{action:'recovery',id:u.id,currentPassword:'recovery-test-password'}));
+  assert.throws(()=>s.mutate(u,{action:'recovery',id:reviewer.id,currentPassword:'incorrect-password'}));
+  const issued=s.mutate(u,{action:'recovery',id:reviewer.id,currentPassword:'a-long-test-password'});
+  assert.equal(s.user(session),undefined);
+  s.recover(issued.recoveryToken,'new-recovered-password');
+  assert.ok(s.login(reviewer.email,'new-recovered-password'));
+  assert.throws(()=>s.recover(issued.recoveryToken,'yet-another-password'));
+  const expired=s.mutate(u,{action:'recovery',id:reviewer.id,currentPassword:'a-long-test-password'});
+  s.db.prepare('UPDATE recovery_tokens SET expires=0').run();
+  assert.throws(()=>s.recover(expired.recoveryToken,'yet-another-password'));
+ }finally{s.db.close();}
+});
+
 test('file-backed records survive database reopening', () => {
  const directory = mkdtempSync(join(tmpdir(), 'caregrid-test-'));
  const path = join(directory, 'workspace.sqlite');

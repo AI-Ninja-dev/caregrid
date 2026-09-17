@@ -22,9 +22,10 @@ export const alerts: Alert[] = [
   { id: 'A-005', patientId: 'CG-007', title: 'Prevention follow-up due', description: 'A fictional stroke-prevention follow-up is due under the sample care workflow. Review context before any real-world action.', time: '08:10', kind: 'reading' },
 ];
 
-export function filterPatients(query: string, pillar: ClinicalPillar | 'All pillars') {
+export function filterPatients(query: string, scope: string) {
   const term = query.trim().toLowerCase();
-  return patients.filter(p => (pillar === 'All pillars' || p.pillar === pillar) && `${p.name} ${p.id} ${p.town} ${p.programme} ${p.pillar}`.toLowerCase().includes(term));
+  const all = scope === 'All pillars' || scope === 'All programmes';
+  return patients.filter(p => (all || p.pillar === scope || p.programme === scope) && `${p.name} ${p.id} ${p.town} ${p.programme} ${p.pillar}`.toLowerCase().includes(term));
 }
 
 export function toggleAcknowledgement(ids: string[], id: string) {

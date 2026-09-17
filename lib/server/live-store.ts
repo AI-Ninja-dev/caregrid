@@ -1,7 +1,8 @@
+import { randomUUID } from 'node:crypto';
 import { resolve } from 'node:path';
 import { AppError, Store, field, type User } from './store.ts';
 import { migrateClinicalPillars } from './schema.ts';
-import { migrationDefaults, validateClinicalPillar, validateProgramme } from './clinical.ts';
+import { legacyProgrammeForPillar, migrationDefaults, validateClinicalPillar, validateProgramme } from './clinical.ts';
 
 function clinicalPillar(value: unknown) {
   try { return validateClinicalPillar(value); }
@@ -32,8 +33,8 @@ export class ClinicalStore extends Store {
         if (data.consent !== true) throw new AppError('Record monitoring consent before enrolling a person.');
         const defaults = migrationDefaults();
         const pillar = clinicalPillar(data.pillar ?? defaults.pillar);
-        const programme = clinicalProgramme(pillar, data.programme ?? defaults.programme);
-        const id = crypto.randomUUID();
+        const programme = clinicalProgramme(pillar, data.programme ?? legacyProgrammeForPillar(pillar));
+        const id = randomUUID();
         const now = new Date().toISOString();
         this.db.prepare('INSERT INTO people(id,name,town,consent_at,active,pillar,programme) VALUES(?,?,?,?,1,?,?)').run(id, field(data.name, 'Name'), field(data.town, 'Town'), now, pillar, programme);
         this.audit(user.id, 'person', id);
@@ -43,7 +44,7 @@ export class ClinicalStore extends Store {
 
     if (data.action === 'plan' || data.action === 'plan-update') {
       return this.transaction(() => {
-        const id = crypto.randomUUID();
+        const id = randomUUID();
         const now = new Date().toISOString();
         const existing = data.action === 'plan-update' ? this.planVersion(data.id, data.version) : null;
         const personId = existing ? String(existing.person_id) : field(data.personId, 'Person');

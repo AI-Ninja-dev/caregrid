@@ -15,7 +15,7 @@ type Reading = { device_id: string; measured_at: string };
 type Task = { id: string; person_id: string; title: string; owner: string | null; stage: string };
 type Plan = { id: string; person_id: string; focus: string; next_review: string; status: string };
 
-type AttentionSnapshot = {
+export type AttentionSnapshot = {
   people: readonly Person[];
   devices: readonly Device[];
   readings: readonly Reading[];
@@ -23,7 +23,7 @@ type AttentionSnapshot = {
   plans: readonly Plan[];
 };
 
-type AttentionOptions = {
+export type AttentionOptions = {
   now?: Date;
   /** Optional operational freshness policy. Omit it when the service has not defined one. */
   deviceFreshnessMs?: number;

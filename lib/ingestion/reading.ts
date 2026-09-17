@@ -2,8 +2,14 @@
 export type AutomaticReading = {
  source: string; sourceEventId: string; deviceId: string; measuredAt: string;
  measurement: {kind:'blood-pressure';systolic:number;diastolic:number;unit:'mmHg';pulse?:number} |
- {kind:'glucose';value:number;unit:'mmol/L'|'mg/dL'} |
- {kind:'spo2';value:number;unit:'%';pulse?:number};
+ {kind:'glucose'|'continuous-glucose';value:number;unit:'mmol/L'|'mg/dL'} |
+ {kind:'spo2';value:number;unit:'%';pulse?:number} |
+ {kind:'pulse';value:number;unit:'bpm'} |
+ {kind:'weight';value:number;unit:'kg'|'lb'} |
+ {kind:'temperature';value:number;unit:'°C'|'°F'} |
+ {kind:'spirometry';value:number;unit:'L'|'L/s';metric?:'FEV1'|'FVC'|'PEF'} |
+ {kind:'ecg';value:number;unit:'bpm';rhythm?:string} |
+ {kind:'medication-adherence'|'activity-adherence';value:number;unit:'%'};
 };
 export type ReadingResult={ok:true;reading:AutomaticReading}|{ok:false;reason:string};
 function validTimestamp(value: unknown): value is string {
@@ -30,17 +36,34 @@ export function validateAutomaticReading(input:unknown):ReadingResult{
  if(m.pulse!==undefined&&!numeric(m.pulse))return fail('Pulse must be a non-negative finite number.');
  if(m.kind==='blood-pressure'){
   if(m.unit!=='mmHg'||!numeric(m.systolic)||!numeric(m.diastolic))return fail('Blood pressure requires systolic and diastolic values in mmHg.');
- }else if(m.kind==='glucose'){
+ }else if(m.kind==='glucose'||m.kind==='continuous-glucose'){
   if(!['mmol/L','mg/dL'].includes(String(m.unit))||!numeric(m.value))return fail('Glucose requires a value and an explicit supported unit.');
  }else if(m.kind==='spo2'){
   if(m.unit!=='%'||!numeric(m.value)||(m.value as number)>100)return fail('SpO2 must be a percentage from 0 to 100.');
+ }else if(m.kind==='pulse'){
+  if(m.unit!=='bpm'||!numeric(m.value))return fail('Pulse requires a value in bpm.');
+ }else if(m.kind==='weight'){
+  if(!['kg','lb'].includes(String(m.unit))||!numeric(m.value))return fail('Weight requires a value in kg or lb.');
+ }else if(m.kind==='temperature'){
+  if(!['°C','°F'].includes(String(m.unit))||!numeric(m.value))return fail('Temperature requires a value in °C or °F.');
+ }else if(m.kind==='spirometry'){
+  if(!['L','L/s'].includes(String(m.unit))||!numeric(m.value)|| (m.metric!==undefined&&!['FEV1','FVC','PEF'].includes(String(m.metric))))return fail('Spirometry requires a supported volume or flow value.');
+ }else if(m.kind==='ecg'){
+  if(m.unit!=='bpm'||!numeric(m.value)|| (m.rhythm!==undefined&&(typeof m.rhythm!=='string'||m.rhythm.length>160)))return fail('ECG summary requires a heart-rate value in bpm.');
+ }else if(m.kind==='medication-adherence'||m.kind==='activity-adherence'){
+  if(m.unit!=='%'||!numeric(m.value)||(m.value as number)>100)return fail('Adherence must be a percentage from 0 to 100.');
  }else return fail('Unsupported measurement kind.');
  // Structure validation is not authentication, device verification or clinical interpretation.
- const measurement: AutomaticReading['measurement'] = m.kind === 'blood-pressure'
-  ? {kind:'blood-pressure',systolic:m.systolic as number,diastolic:m.diastolic as number,unit:'mmHg',...(m.pulse===undefined?{}:{pulse:m.pulse as number})}
-  : m.kind === 'glucose'
-  ? {kind:'glucose',value:m.value as number,unit:m.unit as 'mmol/L'|'mg/dL'}
-  : {kind:'spo2',value:m.value as number,unit:'%',...(m.pulse===undefined?{}:{pulse:m.pulse as number})};
+ let measurement:AutomaticReading['measurement'];
+ if(m.kind==='blood-pressure') measurement={kind:'blood-pressure',systolic:m.systolic as number,diastolic:m.diastolic as number,unit:'mmHg',...(m.pulse===undefined?{}:{pulse:m.pulse as number})};
+ else if(m.kind==='glucose'||m.kind==='continuous-glucose') measurement={kind:m.kind,value:m.value as number,unit:m.unit as 'mmol/L'|'mg/dL'};
+ else if(m.kind==='spo2') measurement={kind:'spo2',value:m.value as number,unit:'%',...(m.pulse===undefined?{}:{pulse:m.pulse as number})};
+ else if(m.kind==='pulse') measurement={kind:'pulse',value:m.value as number,unit:'bpm'};
+ else if(m.kind==='weight') measurement={kind:'weight',value:m.value as number,unit:m.unit as 'kg'|'lb'};
+ else if(m.kind==='temperature') measurement={kind:'temperature',value:m.value as number,unit:m.unit as '°C'|'°F'};
+ else if(m.kind==='spirometry') measurement={kind:'spirometry',value:m.value as number,unit:m.unit as 'L'|'L/s',...(m.metric===undefined?{}:{metric:m.metric as 'FEV1'|'FVC'|'PEF'})};
+ else if(m.kind==='ecg') measurement={kind:'ecg',value:m.value as number,unit:'bpm',...(m.rhythm===undefined?{}:{rhythm:m.rhythm as string})};
+ else measurement={kind:m.kind as 'medication-adherence'|'activity-adherence',value:m.value as number,unit:'%'};
  return {ok:true,reading:{source:data.source,sourceEventId:data.sourceEventId as string,deviceId:data.deviceId as string,measuredAt:data.measuredAt,measurement}};
 }
 export function readingIdentity(reading:AutomaticReading):string{return JSON.stringify([reading.source,reading.deviceId,reading.sourceEventId]);}

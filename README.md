@@ -8,6 +8,9 @@ CareGrid is organised around four clinical pathways: **Diabetes management, Hype
 
 - First-run administrator setup, password sign-in, expiring server-side sessions and role checks.
 - People enrolment with recorded consent attestation, clinical pillar/programme assignment and monitoring pause/resume.
+- Searchable live people directory and person-level connected-care profiles with devices, care plans, follow-ups and stored reading history.
+- Longitudinal stored-measurement trend cards for BP, glucose/CGM, SpO2 and available pulse values, without clinical threshold interpretation.
+- Four-pillar workload view with active-person, device, follow-up and care-plan counts plus CSV summary export.
 - Safe schema migration for existing SQLite workspaces, preserving existing people, devices, readings, tasks, plans and review history while adding clinical-pathway fields.
 - Brand-independent integration registration, one-time bearer credentials, rotation and revocation.
 - Device enrolment with fixed person assignments and BP, glucose/CGM or SpO2 measurement types.
@@ -18,6 +21,15 @@ CareGrid is organised around four clinical pathways: **Diabetes management, Hype
 - A non-clinical operational attention model for devices awaiting their first reading, due care-plan reviews and unassigned follow-ups. Optional device freshness checks are only enabled when an explicit operational policy is supplied.
 - Administrator-issued single-use account recovery links and verified online database backups.
 - A separate `/demo/` route with fictional people spanning all four CareGrid pillars. Production workspace data starts empty.
+
+## Live workspace routes
+
+- `/` — signed-in operational workspace.
+- `/people/` — searchable people directory with pathway filtering.
+- `/people/<id>/` — connected-care profile, stored readings and longitudinal trend cards.
+- `/pathways/` — four-pillar operational workload summary and CSV export.
+- `/attention/` — non-clinical operational attention queue.
+- `/demo/` — separate fictional demonstration workspace.
 
 ## Clinical pathway model
 
@@ -38,9 +50,13 @@ See [Clinical pillars](docs/CLINICAL-PILLARS.md) for the product and safety arch
 
 ## Operational attention
 
-The live workspace snapshot now includes an `attention` collection derived from existing persisted records. It is intentionally limited to workflow and data-flow conditions: an enabled device with no stored reading, a care plan that has reached its review date, or an open follow-up without an owner. A device can also be marked outside a freshness window, but only when the calling service supplies an explicit freshness duration.
+The live workspace snapshot includes an `attention` collection derived from existing persisted records. It is intentionally limited to workflow and data-flow conditions: an enabled device with no stored reading, a care plan that has reached its review date, or an open follow-up without an owner. A device can also be marked outside a freshness window, but only when `CAREGRID_DEVICE_FRESHNESS_HOURS` is explicitly configured.
+
+The workspace also exposes the active operational policy so the UI can show whether a device-freshness window is enabled. When the setting is omitted, CareGrid does not infer stale-device status from elapsed time.
 
 Operational attention is separate from clinical alerting. CareGrid does not currently classify measurement values, infer patient risk, or generate treatment recommendations from telemetry.
+
+See [Operational attention](docs/OPERATIONAL-ATTENTION.md) for queue semantics, configuration and safety boundaries.
 
 ## Run locally
 

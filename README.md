@@ -20,6 +20,8 @@ CareGrid is organised around four clinical pathways: **Diabetes management, Hype
 - Persistent care plans with clinical pillars, owners, review dates, versioned edits, review history and linked follow-up tasks.
 - A non-clinical operational attention model for devices awaiting their first reading, due care-plan reviews and unassigned follow-ups. Optional device freshness checks are only enabled when an explicit operational policy is supplied.
 - Administrator-issued single-use account recovery links and verified online database backups.
+- Public `GET /api/health/` readiness check that confirms the application can reach its database without exposing workspace data.
+- Browser hardening headers including clickjacking, MIME-sniffing, referrer and browser-permission protections, with HSTS enabled for HTTPS deployments.
 - A separate `/demo/` route with fictional people spanning all four CareGrid pillars. Production workspace data starts empty.
 
 ## Live workspace routes
@@ -29,6 +31,7 @@ CareGrid is organised around four clinical pathways: **Diabetes management, Hype
 - `/people/<id>/` — connected-care profile, stored readings and longitudinal trend cards.
 - `/pathways/` — four-pillar operational workload summary and CSV export.
 - `/attention/` — non-clinical operational attention queue.
+- `/api/health/` — minimal deployment health check.
 - `/demo/` — separate fictional demonstration workspace.
 
 ## Clinical pathway model
@@ -71,7 +74,7 @@ npm run start -- --hostname 127.0.0.1 --port 3001
 
 Open http://127.0.0.1:3001 and create your administrator account. No default credentials are provided. Keep the local server bound to loopback while local setup is enabled. Database files, local environment settings and test records are excluded from Git.
 
-See [Operations](docs/OPERATIONS.md) for network hosting, backups, account management and release boundaries. This app needs a Node server and persistent disk; GitHub Pages/static export cannot run it.
+See [Operations](docs/OPERATIONS.md) for network hosting, backups, account management and release boundaries. Use [Release checklist](docs/RELEASE-CHECKLIST.md) before calling an installation ready for a controlled pilot. This app needs a Node server and persistent disk; GitHub Pages/static export cannot run it.
 
 ## Integration
 
@@ -87,8 +90,8 @@ npm run test:browser
 npm run backup -- /path/to/protected-backups
 ```
 
-Browser tests start an isolated server on port 3010 and use a separate test database. They require Chrome. CI installs Chromium and selects that browser through `CI`.
+Browser tests start an isolated server on port 3010 and use a separate test database. They require Chrome. CI installs Chromium and selects that browser through `CI`. Browser tests also verify `/api/health/` and key browser-security headers.
 
 ## Release boundaries
 
-This is a functional single-workspace release, not a completed clinical monitoring service. Vendor adapters, native Bluetooth pairing, clinical measurement alert rules, patient notifications, emergency response, MFA/SSO, automated retention and deletion are not implemented. Reports show the most recent 500 readings; the database retains older records. Validate hosting, access controls, privacy processes, backups, clinical governance and device delivery before using real patient information.
+This is a functional single-workspace release suitable for controlled technical pilot preparation, not a completed clinical monitoring service. Vendor adapters, native Bluetooth pairing, clinical measurement alert rules, patient notifications, emergency response, MFA/SSO, automated retention and deletion are not implemented. Reports show the most recent 500 readings; the database retains older records. Validate hosting, access controls, privacy processes, backups, clinical governance and device delivery before using real patient information.

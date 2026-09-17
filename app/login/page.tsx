@@ -12,7 +12,10 @@ export default function LoginPage() {
   useEffect(() => {
     fetch('/api/auth/', { cache: 'no-store' })
       .then(response => response.json())
-      .then(body => setConfigured(Boolean(body.configured)))
+      .then(body => {
+        setConfigured(Boolean(body.configured));
+        if (body.user) window.location.href = '/dashboard/';
+      })
       .catch(() => setConfigured(null));
   }, []);
 
@@ -29,7 +32,7 @@ export default function LoginPage() {
       });
       const body = await response.json();
       if (!response.ok) throw new Error(body.error || 'Could not sign in.');
-      window.location.href = '/';
+      window.location.href = '/dashboard/';
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Could not sign in.');
     } finally {
@@ -42,12 +45,12 @@ export default function LoginPage() {
       <span className="brand"><Activity/> CareGrid</span>
       <span className="eyebrow">CARE TEAM ACCESS</span>
       <h1>Sign in to CareGrid.</h1>
-      <p>Use your CareGrid email address and password.</p>
+      <p>Use your CareGrid email address and password to open the live RPM dashboard.</p>
       {message && <p className="live-notice" role="status">{message}</p>}
       <form className="live-form" onSubmit={submit}>
         <label className="field">Email<input name="email" type="email" required autoComplete="email"/></label>
         <label className="field">Password<input name="password" type="password" required minLength={14} autoComplete="current-password"/></label>
-        <button className="primary" disabled={busy}>{busy ? 'Signing in…' : 'Sign in'}</button>
+        <button className="primary" disabled={busy}>{busy ? 'Signing in…' : 'Open live dashboard'}</button>
       </form>
       {configured === false && <p className="muted">No administrator exists yet. <Link href="/setup/">Create the first administrator</Link>.</p>}
       <p className="muted">Just exploring? <Link href="/demo/">Continue as guest — no login required</Link>.</p>

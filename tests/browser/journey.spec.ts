@@ -28,10 +28,10 @@ test('care journey links alerts, owned tasks, history, report and reset', async 
 test('people search and responsive layout work at phone and desktop widths', async ({page}) => {
   await page.goto('/demo/');
   await page.getByRole('button', {name:'People',exact:true}).click();
-  await page.getByPlaceholder('Search name, ID or town').fill('not found');
+  await page.getByPlaceholder('Search name, ID, town, programme or pillar').fill('not found');
   await expect(page.getByRole('heading', {name:'No matching people'})).toBeVisible();
   await page.getByRole('button', {name:'Clear filters'}).click();
-  await expect(page.locator('.person')).toHaveCount(4);
+  await expect(page.locator('.person')).toHaveCount(8);
   for (const width of [320,390,768,1440]) {
     await page.setViewportSize({width,height:900});
     await expect(page.locator('body')).toBeVisible();
@@ -55,7 +55,7 @@ test('patient links survive refresh and scoped alert queues support browser hist
  await expect(page.locator('.alert')).toHaveCount(1);
  await expect(page.locator('.alert')).toContainText('Device connection needs attention');
  await page.reload();await expect(page.locator('.patient-scope')).toContainText('Naledi Dlamini');
- await page.getByRole('button',{name:'Show all people'}).click();await expect(page.locator('.alert')).toHaveCount(3);
+ await page.getByRole('button',{name:'Show all people'}).click();await expect(page.locator('.alert')).toHaveCount(5);
  await page.goBack();await expect(page.locator('.alert')).toHaveCount(1);
  await page.goBack();await expect(page.getByRole('heading',{name:'Naledi Dlamini',exact:true})).toBeVisible();
  await page.goto('/demo/#/people/CG-004');await page.getByRole('button',{name:'Review alerts for this person'}).click();await expect(page.locator('.alert')).toHaveCount(0);await expect(page.getByRole('heading',{name:'No alerts'})).toBeVisible();
@@ -64,11 +64,11 @@ test('patient links survive refresh and scoped alert queues support browser hist
 
 test('session survives reload, resets and recovers from corrupt storage',async({page})=>{
  await page.goto('/demo/#/alerts');await page.getByRole('button',{name:'Acknowledge',exact:true}).first().click();
- await page.reload();await expect(page.locator('.alert')).toHaveCount(2);
- await page.goto('/demo/#/workspace');await page.getByRole('button',{name:'Reset demo activity'}).click();await page.reload();await page.getByRole('button',{name:'Alerts',exact:false}).first().click();await expect(page.locator('.alert')).toHaveCount(3);
- await page.evaluate(()=>sessionStorage.setItem('caregrid-demo-session-v1','damaged'));await page.reload();await expect(page.getByText('Saved demo data could not be read. A fresh demo has been opened.')).toBeVisible();await expect(page.locator('.alert')).toHaveCount(3);
+ await page.reload();await expect(page.locator('.alert')).toHaveCount(4);
+ await page.goto('/demo/#/workspace');await page.getByRole('button',{name:'Reset demo activity'}).click();await page.reload();await page.getByRole('button',{name:'Alerts',exact:false}).first().click();await expect(page.locator('.alert')).toHaveCount(5);
+ await page.evaluate(()=>sessionStorage.setItem('caregrid-demo-session-v1','damaged'));await page.reload();await expect(page.getByText('Saved demo data could not be read. A fresh demo has been opened.')).toBeVisible();await expect(page.locator('.alert')).toHaveCount(5);
 });
 test('blocked storage leaves workflow usable with a visible limitation',async({page})=>{
  await page.addInitScript(()=>{Storage.prototype.setItem=()=>{throw new Error('Blocked')};Storage.prototype.getItem=()=>{throw new Error('Blocked')};});
- await page.goto('/demo/#/alerts');await expect(page.getByText('Demo session: memory only')).toBeVisible();await page.getByRole('button',{name:'Acknowledge',exact:true}).first().click();await expect(page.locator('.alert')).toHaveCount(2);
+ await page.goto('/demo/#/alerts');await expect(page.getByText('Demo session: memory only')).toBeVisible();await page.getByRole('button',{name:'Acknowledge',exact:true}).first().click();await expect(page.locator('.alert')).toHaveCount(4);
 });

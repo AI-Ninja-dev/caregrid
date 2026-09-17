@@ -8,7 +8,7 @@ test('keeps CareGrid four clinical pillars and existing programmes', () => {
 });
 
 test('catalogue includes broad RPM and enterprise capability set', () => {
-  const keys = new Set(careGridPlatformModules.map(module => module.key));
+  const keys = new Set<string>(careGridPlatformModules.map(module => module.key));
   for (const key of ['rpm','devices','people','care-plans','population','clinical-alerts','communications','billing','assessments','analytics','ehr','api','rbac','security','patient-portal','automation']) assert.ok(keys.has(key));
   assert.equal(clinicalAlertSafetyBoundary.defaultEnabled, false);
   assert.equal(clinicalAlertSafetyBoundary.requiresGovernanceReference, true);

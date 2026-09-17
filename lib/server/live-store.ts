@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { resolve } from 'node:path';
 import { buildOperationalAttention, type AttentionSnapshot } from '../attention.ts';
+import { buildPersonSummaries, type PersonSummarySnapshot } from '../person-summary.ts';
 import { AppError, Store, field, type User } from './store.ts';
 import { migrateClinicalPillars } from './schema.ts';
 import { legacyProgrammeForPillar, migrationDefaults, validateClinicalPillar, validateProgramme } from './clinical.ts';
@@ -32,6 +33,7 @@ export class ClinicalStore extends Store {
     return {
       ...snapshot,
       attention: buildOperationalAttention(snapshot as unknown as AttentionSnapshot),
+      personSummaries: buildPersonSummaries(snapshot as unknown as PersonSummarySnapshot),
     };
   }
 

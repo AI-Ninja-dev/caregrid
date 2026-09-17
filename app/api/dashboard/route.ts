@@ -5,9 +5,9 @@ import { currentUser, failure, json } from '../../../lib/server/http';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-type Reading = { device_id:string; measured_at:string };
+type Reading = { event_key:string; person_id:string; device_id:string; measured_at:string; payload:unknown };
 type Person = { id:string; active:number|boolean; pillar:string };
-type Device = { id:string; enabled:number|boolean };
+type Device = { id:string; label:string; person_id:string; kind:string; enabled:number|boolean };
 type Task = { person_id:string; stage:string };
 type Plan = { pillar:string; status:string; next_review:string };
 type Attention = { personId:string };
@@ -17,13 +17,13 @@ export async function GET(request: NextRequest) {
   try {
     const user = currentUser(request);
     const snapshot = store().snapshot(user);
-    const readings = snapshot.readings as Reading[];
-    const people = snapshot.people as Person[];
-    const devices = snapshot.devices as Device[];
-    const tasks = snapshot.tasks as Task[];
-    const plans = snapshot.plans as Plan[];
-    const attention = snapshot.attention as Attention[];
-    const clinicalAlerts = snapshot.clinicalAlerts as ClinicalAlert[];
+    const readings = snapshot.readings as unknown as Reading[];
+    const people = snapshot.people as unknown as Person[];
+    const devices = snapshot.devices as unknown as Device[];
+    const tasks = snapshot.tasks as unknown as Task[];
+    const plans = snapshot.plans as unknown as Plan[];
+    const attention = snapshot.attention as unknown as Attention[];
+    const clinicalAlerts = snapshot.clinicalAlerts as unknown as ClinicalAlert[];
     const now = Date.now();
     const day = 24 * 60 * 60 * 1000;
     const latestByDevice = new Map<string, Reading>();
@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
     const readingsToday = readings.filter(reading => now - Date.parse(reading.measured_at) < day).length;
     const openTasks = tasks.filter(task => task.stage !== 'Completed');
     const duePlans = plans.filter(plan => plan.status !== 'Paused' && Date.parse(`${plan.next_review}T23:59:59Z`) <= now);
-    const deviceHealth = snapshot.devices.map(device => ({
+    const deviceHealth = devices.map(device => ({
       ...device,
       latestReading: latestByDevice.get(device.id) || null,
       state: !device.enabled ? 'paused' : !latestByDevice.get(device.id) ? 'awaiting' : 'connected',

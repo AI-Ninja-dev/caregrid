@@ -1,6 +1,12 @@
 import { NextResponse, type NextRequest } from 'next/server';
 
 export function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+  const hasSession = Boolean(request.cookies.get('caregrid_session')?.value);
+  if (pathname === '/' && !hasSession) {
+    return NextResponse.redirect(new URL('/demo/', request.url));
+  }
+
   const response = NextResponse.next();
   response.headers.set('X-Content-Type-Options', 'nosniff');
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');

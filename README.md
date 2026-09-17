@@ -15,6 +15,7 @@ CareGrid is organised around four clinical pathways: **Diabetes management, Hype
 - Persistent reading history, timestamps, CSV export, owned care tasks and an administrator audit view.
 - Team account creation, access disabling and password changes that revoke existing sessions.
 - Persistent care plans with clinical pillars, owners, review dates, versioned edits, review history and linked follow-up tasks.
+- A non-clinical operational attention model for devices awaiting their first reading, due care-plan reviews and unassigned follow-ups. Optional device freshness checks are only enabled when an explicit operational policy is supplied.
 - Administrator-issued single-use account recovery links and verified online database backups.
 - A separate `/demo/` route with fictional people spanning all four CareGrid pillars. Production workspace data starts empty.
 
@@ -34,6 +35,12 @@ Current programme mapping:
 Existing databases are upgraded automatically when the live CareGrid store opens. Migration is idempotent and tested to preserve existing records. Pre-pillar records receive a conservative default pathway and can later be reassigned through the validated clinical mutation layer.
 
 See [Clinical pillars](docs/CLINICAL-PILLARS.md) for the product and safety architecture.
+
+## Operational attention
+
+The live workspace snapshot now includes an `attention` collection derived from existing persisted records. It is intentionally limited to workflow and data-flow conditions: an enabled device with no stored reading, a care plan that has reached its review date, or an open follow-up without an owner. A device can also be marked outside a freshness window, but only when the calling service supplies an explicit freshness duration.
+
+Operational attention is separate from clinical alerting. CareGrid does not currently classify measurement values, infer patient risk, or generate treatment recommendations from telemetry.
 
 ## Run locally
 
@@ -68,4 +75,4 @@ Browser tests start an isolated server on port 3010 and use a separate test data
 
 ## Release boundaries
 
-This is a functional single-workspace release, not a completed clinical monitoring service. Vendor adapters, native Bluetooth pairing, clinical alert rules, patient notifications, emergency response, MFA/SSO, automated retention and deletion are not implemented. Reports show the most recent 500 readings; the database retains older records. Validate hosting, access controls, privacy processes, backups, clinical governance and device delivery before using real patient information.
+This is a functional single-workspace release, not a completed clinical monitoring service. Vendor adapters, native Bluetooth pairing, clinical measurement alert rules, patient notifications, emergency response, MFA/SSO, automated retention and deletion are not implemented. Reports show the most recent 500 readings; the database retains older records. Validate hosting, access controls, privacy processes, backups, clinical governance and device delivery before using real patient information.

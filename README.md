@@ -2,18 +2,38 @@
 
 A connected-care workspace for HomeClinicStore, built with Next.js, TypeScript and a persistent SQLite backend. Designed for South African care teams. Readings arrive automatically from authenticated integrations; there is no manual reading-entry flow.
 
+CareGrid is organised around four clinical pathways: **Diabetes management, Hypertension management, Cardiovascular health, and Stroke prevention**. These pathways organise people, care plans, review workflows and dashboard views. They are workflow classifications and do not diagnose a person or automatically determine treatment.
+
 ## Implemented
 
 - First-run administrator setup, password sign-in, expiring server-side sessions and role checks.
-- People enrolment with recorded consent attestation and monitoring pause/resume.
+- People enrolment with recorded consent attestation, clinical pillar/programme assignment and monitoring pause/resume.
+- Safe schema migration for existing SQLite workspaces, preserving existing people, devices, readings, tasks, plans and review history while adding clinical-pathway fields.
 - Brand-independent integration registration, one-time bearer credentials, rotation and revocation.
 - Device enrolment with fixed person assignments and BP, glucose/CGM or SpO2 measurement types.
 - Authenticated `POST /api/readings/`, validation, atomic duplicate handling and conflicting-event rejection.
 - Persistent reading history, timestamps, CSV export, owned care tasks and an administrator audit view.
 - Team account creation, access disabling and password changes that revoke existing sessions.
-- Persistent care plans with owners, review dates, versioned edits, review history and linked follow-up tasks.
+- Persistent care plans with clinical pillars, owners, review dates, versioned edits, review history and linked follow-up tasks.
 - Administrator-issued single-use account recovery links and verified online database backups.
-- A separate `/demo/` route for the original fictional experience. Production workspace data starts empty.
+- A separate `/demo/` route with fictional people spanning all four CareGrid pillars. Production workspace data starts empty.
+
+## Clinical pathway model
+
+The persisted workspace stores a pillar and programme for each enrolled person. Care plans also store their clinical pillar independently so one person's care-team workflow can evolve without rewriting historical device data.
+
+Current programme mapping:
+
+| Clinical pillar | Current programme |
+| --- | --- |
+| Diabetes management | Glucose monitoring |
+| Hypertension management | Blood pressure |
+| Cardiovascular health | Heart-health monitoring |
+| Stroke prevention | Risk-factor monitoring |
+
+Existing databases are upgraded automatically when the live CareGrid store opens. Migration is idempotent and tested to preserve existing records. Pre-pillar records receive a conservative default pathway and can later be reassigned through the validated clinical mutation layer.
+
+See [Clinical pillars](docs/CLINICAL-PILLARS.md) for the product and safety architecture.
 
 ## Run locally
 
@@ -28,7 +48,7 @@ npm run start -- --hostname 127.0.0.1 --port 3001
 
 Open http://127.0.0.1:3001 and create your administrator account. No default credentials are provided. Keep the local server bound to loopback while local setup is enabled. Database files, local environment settings and test records are excluded from Git.
 
-See [Operations](docs/OPERATIONS.md) for network hosting, backups, account management and release boundaries. This app now needs a Node server and persistent disk; GitHub Pages/static export cannot run it.
+See [Operations](docs/OPERATIONS.md) for network hosting, backups, account management and release boundaries. This app needs a Node server and persistent disk; GitHub Pages/static export cannot run it.
 
 ## Integration
 
@@ -48,4 +68,4 @@ Browser tests start an isolated server on port 3010 and use a separate test data
 
 ## Release boundaries
 
-This is a functional single-workspace release, not a completed clinical monitoring service. Vendor adapters, native Bluetooth pairing, clinical alert rules, patient notifications, emergency response, MFA/SSO, automated retention and deletion are not implemented. Reports show the most recent 500 readings; the database retains older records. Validate hosting, access controls, privacy processes, backups and device delivery before using real patient information.
+This is a functional single-workspace release, not a completed clinical monitoring service. Vendor adapters, native Bluetooth pairing, clinical alert rules, patient notifications, emergency response, MFA/SSO, automated retention and deletion are not implemented. Reports show the most recent 500 readings; the database retains older records. Validate hosting, access controls, privacy processes, backups, clinical governance and device delivery before using real patient information.

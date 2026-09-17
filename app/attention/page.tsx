@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { Activity, CheckCircle2, ClipboardClock, Radio, UserRoundCheck } from 'lucide-react';
+import { Activity, CheckCircle2, ClipboardCheck, Radio, UserRoundCheck } from 'lucide-react';
 import type { OperationalAttentionItem } from '../../lib/attention';
 
 type Person = { id: string; name: string; pillar?: string; programme?: string };
@@ -10,7 +10,7 @@ type Workspace = { people: Person[]; attention: OperationalAttentionItem[] };
 
 const iconFor = (kind: OperationalAttentionItem['kind']) => {
   if (kind === 'device-awaiting-reading' || kind === 'device-stale') return Radio;
-  if (kind === 'plan-review-due') return ClipboardClock;
+  if (kind === 'plan-review-due') return ClipboardCheck;
   return UserRoundCheck;
 };
 

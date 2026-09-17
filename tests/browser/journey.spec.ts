@@ -28,7 +28,7 @@ test('care journey links alerts, owned tasks, history, report and reset', async 
 test('people search and responsive layout work at phone and desktop widths', async ({page}) => {
   await page.goto('/demo/');
   await page.getByRole('button', {name:'People',exact:true}).click();
-  await page.getByPlaceholder('Search name, ID, town, programme or pillar').fill('not found');
+  await page.getByPlaceholder('Search people, town or pathway').fill('not found');
   await expect(page.getByRole('heading', {name:'No matching people'})).toBeVisible();
   await page.getByRole('button', {name:'Clear filters'}).click();
   await expect(page.locator('.person')).toHaveCount(8);
@@ -59,7 +59,7 @@ test('patient links survive refresh and scoped alert queues support browser hist
  await page.goBack();await expect(page.locator('.alert')).toHaveCount(1);
  await page.goBack();await expect(page.getByRole('heading',{name:'Naledi Dlamini',exact:true})).toBeVisible();
  await page.goto('/demo/#/people/CG-004');await page.getByRole('button',{name:'Review alerts for this person'}).click();await expect(page.locator('.alert')).toHaveCount(0);await expect(page.getByRole('heading',{name:'No alerts'})).toBeVisible();
- await page.goto('/demo/#/unknown');await expect(page.getByRole('heading',{name:'A clearer view of care.'})).toBeVisible();
+ await page.goto('/demo/#/unknown');await expect(page.getByRole('heading',{name:'Four pathways. One clearer view.'})).toBeVisible();
 });
 
 test('session survives reload, resets and recovers from corrupt storage',async({page})=>{

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Activity, ClipboardCheck, ListChecks, Radio, UserRound } from 'lucide-react';
+import ReadingTrends from '../../components/ReadingTrends';
 import type { AutomaticReading } from '../../../lib/ingestion/reading';
 import type { PersonSummary } from '../../../lib/person-summary';
 
@@ -64,7 +65,7 @@ export default function PersonPage() {
         <h1>{person.name}</h1>
         <p>{person.programme} · {person.town}, South Africa · {person.active ? 'Monitoring active' : 'Monitoring paused'}</p>
       </div>
-      <div className="actions"><Link className="secondary" href="/attention/">Operational attention</Link><Link className="secondary" href="/">Back to workspace</Link></div>
+      <div className="actions"><Link className="secondary" href="/people/">People</Link><Link className="secondary" href="/attention/">Operational attention</Link><Link className="secondary" href="/">Back to workspace</Link></div>
     </div>
 
     <div className="metrics">
@@ -85,6 +86,8 @@ export default function PersonPage() {
         <p className="muted">This profile organises connected-care workflow and stored device context. It does not diagnose, score or recommend treatment.</p>
       </section>
     </div>
+
+    <ReadingTrends readings={readings}/>
 
     <div className="device-grid context">
       <section className="panel"><div className="panel-heading"><h2>Devices</h2><Radio size={21}/></div>{devices.length ? devices.map(device => <article className="live-row" key={device.id}><div><h3>{device.label}</h3><p>{device.kind} · {device.adapter_id} · {device.enabled ? 'Ingestion enabled' : 'Ingestion paused'}</p></div><span className="badge">{device.id}</span></article>) : <p>No devices enrolled for this person.</p>}</section>

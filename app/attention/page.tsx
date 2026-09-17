@@ -73,6 +73,7 @@ export default function AttentionPage() {
               <h3><Icon size={18}/> {item.title}</h3>
               <p>{profile?.name || item.personId}{profile?.pillar ? ` · ${profile.pillar}` : ''}{profile?.programme ? ` · ${profile.programme}` : ''}</p>
               <p>{item.detail}</p>
+              <Link className="text-button" href={`/people/${encodeURIComponent(item.personId)}/`}>Open person profile</Link>
             </div>
             <span className="badge">Operational</span>
           </article>;

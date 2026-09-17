@@ -13,6 +13,19 @@ type StoredReading = {
   payload: AutomaticReading;
 };
 
+const labels: Record<Exclude<AutomaticReading['measurement']['kind'], 'blood-pressure'>, string> = {
+  glucose: 'Glucose',
+  'continuous-glucose': 'Continuous glucose',
+  spo2: 'SpO2',
+  pulse: 'Pulse',
+  weight: 'Weight',
+  temperature: 'Temperature',
+  spirometry: 'Spirometry',
+  ecg: 'ECG · heart rate',
+  'medication-adherence': 'Medication adherence',
+  'activity-adherence': 'Activity adherence',
+};
+
 /** Builds display series only. No thresholds, clinical labels or risk interpretation are applied. */
 export function buildTrendSeries(readings: readonly StoredReading[], limit = 30): TrendSeries[] {
   if (!Number.isInteger(limit) || limit < 2 || limit > 500) throw new Error('Trend limit must be an integer from 2 to 500.');
@@ -36,12 +49,18 @@ export function buildTrendSeries(readings: readonly StoredReading[], limit = 30)
       if (measurement.pulse !== undefined) append('blood-pressure-pulse', 'Blood pressure · pulse', 'bpm', { measuredAt: reading.measured_at, value: measurement.pulse });
       continue;
     }
-    if (measurement.kind === 'glucose') {
-      append('glucose', 'Glucose', measurement.unit, { measuredAt: reading.measured_at, value: measurement.value });
-      continue;
+
+    const id = measurement.kind === 'spirometry' && measurement.metric
+      ? `spirometry-${measurement.metric.toLowerCase()}`
+      : measurement.kind;
+    const label = measurement.kind === 'spirometry' && measurement.metric
+      ? `Spirometry · ${measurement.metric}`
+      : labels[measurement.kind];
+    append(id, label, measurement.unit, { measuredAt: reading.measured_at, value: measurement.value });
+
+    if (measurement.kind === 'spo2' && measurement.pulse !== undefined) {
+      append('spo2-pulse', 'SpO2 · pulse', 'bpm', { measuredAt: reading.measured_at, value: measurement.pulse });
     }
-    append('spo2', 'SpO2', measurement.unit, { measuredAt: reading.measured_at, value: measurement.value });
-    if (measurement.pulse !== undefined) append('spo2-pulse', 'SpO2 · pulse', 'bpm', { measuredAt: reading.measured_at, value: measurement.pulse });
   }
 
   return [...series.values()];

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { AppError, store } from './store';
+import { AppError } from './store';
+import { store } from './live-store';
 export const sessionCookie = 'caregrid_session';
 export function json(data: unknown, status = 200) {
   return NextResponse.json(data, { status, headers: { 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' } });

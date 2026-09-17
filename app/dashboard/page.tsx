@@ -5,9 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Activity, BarChart3, Bell, CalendarClock, ChevronRight, ClipboardList, Gauge, HeartPulse, LayoutDashboard, Menu, Radio, RefreshCw, Search, ShieldCheck, Smartphone, Users, Wifi, X } from 'lucide-react';
 import styles from './dashboard.module.css';
 
-type BloodPressureMeasurement = { kind:'blood-pressure'; systolic:number; diastolic:number; unit:string; pulse?:number };
-type NumericMeasurement = { kind:string; value:number; unit:string; pulse?:number };
-type Measurement = BloodPressureMeasurement | NumericMeasurement;
+type Measurement = { kind:string; unit:string; value?:number; systolic?:number; diastolic?:number; pulse?:number };
 type Reading = { event_key:string; person_id:string; device_id:string; measured_at:string; payload:{ measurement:Measurement } };
 type Person = { id:string; name:string; town:string; active:number; pillar:string; programme:string };
 type Attention = { id:string; kind:string; personId:string; subjectId:string; title:string; detail:string };
@@ -37,8 +35,8 @@ const fmt = (value:string) => new Intl.DateTimeFormat('en-ZA',{dateStyle:'medium
 const compact = (value:string) => new Intl.DateTimeFormat('en-ZA',{day:'2-digit',month:'short',timeZone:'Africa/Johannesburg'}).format(new Date(value));
 function readingValue(reading:Reading){
   const m=reading.payload.measurement;
-  if(m.kind==='blood-pressure') return `${m.systolic}/${m.diastolic} ${m.unit}${m.pulse===undefined?'':` · ${m.pulse} bpm`}`;
-  return `${m.value} ${m.unit}${m.kind==='spo2'&&m.pulse!==undefined?` · ${m.pulse} bpm`:''}`;
+  if(m.kind==='blood-pressure') return `${m.systolic ?? '—'}/${m.diastolic ?? '—'} ${m.unit}${m.pulse===undefined?'':` · ${m.pulse} bpm`}`;
+  return `${m.value ?? '—'} ${m.unit}${m.kind==='spo2'&&m.pulse!==undefined?` · ${m.pulse} bpm`:''}`;
 }
 function metricValue(reading:Reading){const m=reading.payload.measurement;return m.kind==='blood-pressure'?Number(m.systolic):Number(m.value);}
 function label(kind:string){return kind.replace(/-/g,' ').replace(/\b\w/g,c=>c.toUpperCase());}

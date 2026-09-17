@@ -16,6 +16,7 @@ export default function PlatformPage() {
         <span className="eyebrow">EXPANDED CONNECTED-CARE PLATFORM</span>
         <h1>One CareGrid. Full care operations.</h1>
         <p>The existing CareGrid programs and four clinical pillars remain the foundation. The platform now has an additive architecture for RPM, care operations, engagement, analytics, integrations, enterprise administration and patient experience.</p>
+        <div className="actions"><Link className="primary" href="/platform/operations/">Open live operations console</Link><Link className="secondary" href="/people/">Open people workspace</Link></div>
       </section>
       <section className="clinical-section">
         <div className="clinical-section-heading"><div><span className="eyebrow">FOUNDATION</span><h2>Existing CareGrid programs preserved</h2></div><ShieldCheck/></div>

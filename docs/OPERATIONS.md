@@ -12,9 +12,17 @@ Run the Node server on a private interface behind an HTTPS reverse proxy. GitHub
 
 Use a persistent encrypted volume for `CAREGRID_DB_PATH`, with access restricted to the app's service account. The application does not encrypt SQLite itself. Do not use an ephemeral serverless filesystem or multiple independent app instances. Account, session and integration credential hashes are stored server-side. Session cookies expire after eight hours. Password changes and account disabling revoke sessions; credentials can be rotated or paused in Workspace.
 
+## Clinical pathway migration
+
+CareGrid stores four workflow pathways: Diabetes management, Hypertension management, Cardiovascular health and Stroke prevention. People store both a clinical pillar and programme; care plans store their pillar independently.
+
+When the live store opens an older CareGrid database, an idempotent schema migration adds missing `pillar` and `programme` columns without recreating existing tables or deleting people, devices, readings, tasks, plans or review history. Existing pre-pillar rows receive the conservative migration default `Diabetes management / Glucose monitoring`. This is a migration placeholder, not a clinical inference. Administrators should review migrated records and correct the pathway assignment when appropriate through the validated clinical workflow. Reviewers cannot change a person's pathway assignment.
+
+Before upgrading an existing installation, create and verify a backup. After first startup on the new release, confirm database integrity, inspect representative people and care plans, and verify that expected readings, tasks and plan review history remain present. Do not manually rewrite pathway columns in production SQLite files.
+
 ## Onboarding and ingestion
 
-1. Record a person's consent and enrol them in People.
+1. Record a person's consent, assign the appropriate CareGrid pathway/programme and enrol them in People.
 2. Register a named integration in Workspace. Save the generated bearer token immediately; the database stores only its hash.
 3. Enrol a device against that integration and person, selecting BP, glucose or SpO2.
 4. Configure the approved gateway/service to POST the documented JSON format to `/api/readings/`, with bearer authorisation and `X-CareGrid-Adapter`.
@@ -32,18 +40,18 @@ Administrators can issue a one-time recovery link for another active account aft
 
 ## Care plans
 
-The signed-in Care plans view stores a person's agreed goals, an active team owner, review cadence, next review date and status. Team members can record review notes and create linked follow-up tasks. Task creation is idempotent for each plan version. Edits and reviews use version checks to reject stale updates; refresh and re-open the editor after a conflict. Review history persists independently of the current plan text. Due dates use the South African calendar day. A due review is a workflow reminder, not a medical alert. Plans do not generate treatment recommendations or thresholds.
+The signed-in Care plans view stores a person's clinical pillar, agreed goals, an active team owner, review cadence, next review date and status. Team members can record review notes and create linked follow-up tasks. Task creation is idempotent for each plan version. Edits and reviews use version checks to reject stale updates; refresh and re-open the editor after a conflict. Review history persists independently of the current plan text. Due dates use the South African calendar day. A due review is a workflow reminder, not a medical alert. Plans do not generate treatment recommendations or thresholds.
 
 The legacy `/plans/` page remains a separately labelled fictional care-plan demo; signed-in operational plans are under `/#/care-plans`.
 
 ## Current limits and release gates
 
-The app now has persisted people, device assignments, readings, tasks, accounts, credential rotation, CSV export and audit events. Reviewers can read workspace data and manage care tasks; administrators manage access, enrolment and integrations. All authorised users belong to the same organisation.
+The app now has persisted people, pathway assignments, device assignments, readings, tasks, accounts, credential rotation, CSV export and audit events. Reviewers can read workspace data and manage care tasks; administrators manage access, enrolment, pathway corrections and integrations. All authorised users belong to the same organisation.
 
-Before using real patient information, the service operator must validate consent documentation, privacy/retention and deletion procedures, backup recovery, hosting access, and supplier connector behaviour with test devices. A consent checkbox is a record of an operator's attestation, not a complete consent-management system. Database audit rows are not an independently tamper-proof audit service. Recent-data screens return at most 500 readings and 100 audit events; older data remains stored but is not paginated in this release.
+Before using real patient information, the service operator must validate consent documentation, privacy/retention and deletion procedures, backup recovery, hosting access, clinical governance and supplier connector behaviour with test devices. A consent checkbox is a record of an operator's attestation, not a complete consent-management system. Database audit rows are not an independently tamper-proof audit service. Recent-data screens return at most 500 readings and 100 audit events; older data remains stored but is not paginated in this release.
 
 Vendor adapters, native Bluetooth pairing, clinical thresholds/alerts, patient notifications, emergency response, MFA/SSO and automated retention/deletion are not implemented. This release must not be described as a complete clinical monitoring service. Real device delivery still requires a verified gateway or vendor connector.
 
 ## Verification
 
-`npm test` exercises validation, authentication, role restrictions, task ownership and ingestion. `npm run build` checks types and lint. `npm run test:browser` starts an isolated server on port 3010 with a separate temporary database and checks the demo plus the stored-workspace journey. Test data and databases are excluded from Git.
+`npm test` exercises validation, authentication, clinical-pathway migration and role restrictions, task ownership and ingestion. `npm run build` checks types and lint. `npm run test:browser` starts an isolated server on port 3010 with a separate temporary database and checks the demo plus the stored-workspace journey. Test data and databases are excluded from Git.

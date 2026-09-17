@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 import { timingSafeEqual } from 'node:crypto';
-import { AppError, hash, store } from '../../../lib/server/store';
+import { AppError, hash } from '../../../lib/server/store';
+import { store } from '../../../lib/server/live-store';
 import { body, failure, json, sameOrigin, sessionCookie } from '../../../lib/server/http';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';

@@ -17,13 +17,15 @@ test('clinical pillar migration preserves existing people and care plans', () =>
 
   const person = db.prepare('SELECT * FROM people WHERE id=?').get('p1') as Record<string, unknown>;
   const plan = db.prepare('SELECT * FROM care_plans WHERE id=?').get('cp1') as Record<string, unknown>;
+  const peopleCount = db.prepare('SELECT COUNT(*) AS count FROM people').get() as { count: number };
+  const planCount = db.prepare('SELECT COUNT(*) AS count FROM care_plans').get() as { count: number };
   assert.equal(person.name, 'Existing Person');
   assert.equal(person.pillar, 'Diabetes management');
   assert.equal(person.programme, 'Glucose monitoring');
   assert.equal(plan.focus, 'Existing plan');
   assert.equal(plan.pillar, 'Diabetes management');
-  assert.equal(db.prepare('SELECT COUNT(*) AS count FROM people').get().count, 1);
-  assert.equal(db.prepare('SELECT COUNT(*) AS count FROM care_plans').get().count, 1);
+  assert.equal(peopleCount.count, 1);
+  assert.equal(planCount.count, 1);
 });
 
 test('clinical pillar migration leaves already-upgraded schemas unchanged', () => {

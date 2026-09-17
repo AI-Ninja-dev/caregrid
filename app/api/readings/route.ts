@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server';
-import { AppError, store } from '../../../lib/server/store';
+import { AppError } from '../../../lib/server/store';
+import { store } from '../../../lib/server/live-store';
 import { body, failure, json } from '../../../lib/server/http';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';

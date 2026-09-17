@@ -6,7 +6,7 @@ import { Activity, CheckCircle2, ClipboardCheck, Radio, UserRoundCheck } from 'l
 import type { OperationalAttentionItem } from '../../lib/attention';
 
 type Person = { id: string; name: string; pillar?: string; programme?: string };
-type Workspace = { people: Person[]; attention: OperationalAttentionItem[] };
+type Workspace = { people: Person[]; attention: OperationalAttentionItem[]; operationalPolicy?: { deviceFreshnessHours: number | null } };
 
 const iconFor = (kind: OperationalAttentionItem['kind']) => {
   if (kind === 'device-awaiting-reading' || kind === 'device-stale') return Radio;
@@ -39,6 +39,7 @@ export default function AttentionPage() {
   }, []);
 
   const person = (id: string) => workspace?.people.find(item => item.id === id);
+  const freshness = workspace?.operationalPolicy?.deviceFreshnessHours ?? null;
 
   return <main>
     <div className="page-heading">
@@ -47,7 +48,7 @@ export default function AttentionPage() {
         <h1>Attention without clinical guesswork.</h1>
         <p>Workflow and data-flow checks only. Measurement values are not classified here.</p>
       </div>
-      <Link className="secondary" href="/">Back to workspace</Link>
+      <div className="actions"><Link className="secondary" href="/people/">People</Link><Link className="secondary" href="/">Back to workspace</Link></div>
     </div>
 
     {status && <section className="panel"><p role="status">{status}</p><Link href="/">Open CareGrid</Link></section>}
@@ -56,7 +57,7 @@ export default function AttentionPage() {
       <div className="metrics">
         <article><span>Operational items</span><strong>{workspace.attention.length}</strong><small>Derived from current stored records</small></article>
         <article><span>People represented</span><strong>{new Set(workspace.attention.map(item => item.personId)).size}</strong><small>Only active monitoring records are included</small></article>
-        <article><span>Clinical alerts</span><strong>0</strong><small>This route does not classify measurement values</small></article>
+        <article><span>Device freshness policy</span><strong>{freshness === null ? 'Off' : `${freshness}h`}</strong><small>{freshness === null ? 'No stale-device inference' : 'Technical data-flow window only'}</small></article>
       </div>
 
       <section className="panel">

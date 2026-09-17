@@ -2,10 +2,13 @@
 
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Activity, AlertTriangle, BarChart3, Bell, CalendarClock, ChevronRight, ClipboardList, Gauge, HeartPulse, LayoutDashboard, Menu, Radio, RefreshCw, Search, ShieldCheck, Smartphone, Users, Wifi, X } from 'lucide-react';
+import { Activity, BarChart3, Bell, CalendarClock, ChevronRight, ClipboardList, Gauge, HeartPulse, LayoutDashboard, Menu, Radio, RefreshCw, Search, ShieldCheck, Smartphone, Users, Wifi, X } from 'lucide-react';
 import styles from './dashboard.module.css';
 
-type Reading = { event_key:string; person_id:string; device_id:string; measured_at:string; payload:{ measurement:any } };
+type BloodPressureMeasurement = { kind:'blood-pressure'; systolic:number; diastolic:number; unit:string; pulse?:number };
+type NumericMeasurement = { kind:string; value:number; unit:string; pulse?:number };
+type Measurement = BloodPressureMeasurement | NumericMeasurement;
+type Reading = { event_key:string; person_id:string; device_id:string; measured_at:string; payload:{ measurement:Measurement } };
 type Person = { id:string; name:string; town:string; active:number; pillar:string; programme:string };
 type Attention = { id:string; kind:string; personId:string; subjectId:string; title:string; detail:string };
 type Task = { id:string; person_id:string; title:string; owner:string|null; stage:string };
@@ -22,10 +25,10 @@ type DashboardData = {
   tasks:Task[];
   plans:Plan[];
   attention:Attention[];
-  clinicalAlerts:any[];
-  communications:any[];
-  assessments:any[];
-  integrationEvents:any[];
+  clinicalAlerts:unknown[];
+  communications:unknown[];
+  assessments:unknown[];
+  integrationEvents:unknown[];
   pillars:Pillar[];
   operationalPolicy:{ deviceFreshnessHours:number|null };
 };

@@ -30,6 +30,15 @@ test('clinical pathway assignments can be corrected without recreating a person'
   assert.equal(after.programme, 'Risk-factor monitoring');
 });
 
+test('reviewers cannot change clinical pathway assignments', () => {
+  const store = new ClinicalStore(':memory:');
+  const admin = store.setup('admin@example.com', 'very-long-test-password');
+  const reviewer = store.createUser('reviewer@example.com', 'another-long-test-password', 'reviewer');
+  store.mutate(admin, { action: 'person', name: 'Example Person', town: 'Cape Town', consent: true });
+  const person = store.snapshot(admin).people[0] as Record<string, unknown>;
+  assert.throws(() => store.mutate(reviewer, { action: 'person-clinical', id: person.id, pillar: 'Cardiovascular health', programme: 'Heart-health monitoring' }), (error: unknown) => error instanceof AppError && error.status === 403);
+});
+
 test('new care plans inherit a person pillar when the form omits it', () => {
   const store = new ClinicalStore(':memory:');
   const admin = store.setup('admin@example.com', 'very-long-test-password');

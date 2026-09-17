@@ -4,6 +4,7 @@ import { buildOperationalAttention, deviceFreshnessMsFromHours, type AttentionSn
 import { buildPersonSummaries, type PersonSummarySnapshot } from '../person-summary.ts';
 import { AppError, Store, field, type User } from './store.ts';
 import { migrateClinicalPillars } from './schema.ts';
+import { migrateEnterpriseCareOperations } from './enterprise-schema.ts';
 import { legacyProgrammeForPillar, migrationDefaults, validateClinicalPillar, validateProgramme } from './clinical.ts';
 
 function clinicalPillar(value: unknown) {
@@ -26,6 +27,7 @@ export class ClinicalStore extends Store {
   constructor(path: string) {
     super(path);
     migrateClinicalPillars(this.db);
+    migrateEnterpriseCareOperations(this.db);
   }
 
   snapshot(user: User) {

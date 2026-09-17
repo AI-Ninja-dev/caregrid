@@ -12,7 +12,10 @@ export default function SetupPage() {
   useEffect(() => {
     fetch('/api/auth/', { cache: 'no-store' })
       .then(response => response.json())
-      .then(body => setConfigured(Boolean(body.configured)))
+      .then(body => {
+        setConfigured(Boolean(body.configured));
+        if (body.user) window.location.href = '/dashboard/';
+      })
       .catch(() => setConfigured(null));
   }, []);
 
@@ -29,7 +32,7 @@ export default function SetupPage() {
       });
       const body = await response.json();
       if (!response.ok) throw new Error(body.error || 'Could not create administrator.');
-      window.location.href = '/';
+      window.location.href = '/dashboard/';
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Could not create administrator.');
     } finally {

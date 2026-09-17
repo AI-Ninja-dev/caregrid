@@ -42,6 +42,18 @@ export class ClinicalStore extends Store {
       });
     }
 
+    if (data.action === 'person-clinical') {
+      if (user.role !== 'admin') throw new AppError('Administrator access is required.', 403);
+      return this.transaction(() => {
+        const id = field(data.id, 'Person');
+        const pillar = clinicalPillar(data.pillar);
+        const programme = clinicalProgramme(pillar, data.programme ?? legacyProgrammeForPillar(pillar));
+        if (!this.db.prepare('UPDATE people SET pillar=?,programme=? WHERE id=?').run(pillar, programme, id).changes) throw new AppError('Person not found.', 404);
+        this.audit(user.id, 'person-clinical', id);
+        return {};
+      });
+    }
+
     if (data.action === 'plan' || data.action === 'plan-update') {
       return this.transaction(() => {
         const id = randomUUID();

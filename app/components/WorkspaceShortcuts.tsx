@@ -8,13 +8,22 @@ import { BellRing, Users } from 'lucide-react';
 export default function WorkspaceShortcuts() {
   const pathname = usePathname();
   const [signedIn, setSignedIn] = useState(false);
+  const [attentionCount, setAttentionCount] = useState(0);
 
   useEffect(() => {
     let active = true;
     fetch('/api/auth/', { cache: 'no-store' })
       .then(response => response.json())
-      .then(body => { if (active) setSignedIn(Boolean(body.user)); })
-      .catch(() => { if (active) setSignedIn(false); });
+      .then(async body => {
+        const authenticated = Boolean(body.user);
+        if (!active) return;
+        setSignedIn(authenticated);
+        if (!authenticated) { setAttentionCount(0); return; }
+        const workspace = await fetch('/api/workspace/', { cache: 'no-store' });
+        const data = await workspace.json();
+        if (active && workspace.ok) setAttentionCount(Array.isArray(data.attention) ? data.attention.length : 0);
+      })
+      .catch(() => { if (active) { setSignedIn(false); setAttentionCount(0); } });
     return () => { active = false; };
   }, [pathname]);
 
@@ -22,6 +31,6 @@ export default function WorkspaceShortcuts() {
 
   return <nav className="workspace-shortcuts" aria-label="Workspace shortcuts">
     {!pathname.startsWith('/people') && <Link className="workspace-shortcut" href="/people/" aria-label="Open people directory"><Users size={17}/><span>People</span></Link>}
-    {!pathname.startsWith('/attention') && <Link className="workspace-shortcut" href="/attention/" aria-label="Open operational attention queue"><BellRing size={17}/><span>Operational attention</span></Link>}
+    {!pathname.startsWith('/attention') && <Link className="workspace-shortcut" href="/attention/" aria-label={`Open operational attention queue${attentionCount ? `, ${attentionCount} items` : ''}`}><BellRing size={17}/><span>Operational attention</span>{attentionCount > 0 && <b>{attentionCount}</b>}</Link>}
   </nav>;
 }

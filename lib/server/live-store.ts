@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { resolve } from 'node:path';
-import { buildOperationalAttention, type AttentionSnapshot } from '../attention.ts';
+import { buildOperationalAttention, deviceFreshnessMsFromHours, type AttentionSnapshot } from '../attention.ts';
 import { buildPersonSummaries, type PersonSummarySnapshot } from '../person-summary.ts';
 import { AppError, Store, field, type User } from './store.ts';
 import { migrateClinicalPillars } from './schema.ts';
@@ -30,10 +30,14 @@ export class ClinicalStore extends Store {
 
   snapshot(user: User) {
     const snapshot = super.snapshot(user);
+    const deviceFreshnessMs = deviceFreshnessMsFromHours(process.env.CAREGRID_DEVICE_FRESHNESS_HOURS);
     return {
       ...snapshot,
-      attention: buildOperationalAttention(snapshot as unknown as AttentionSnapshot),
+      attention: buildOperationalAttention(snapshot as unknown as AttentionSnapshot, { deviceFreshnessMs }),
       personSummaries: buildPersonSummaries(snapshot as unknown as PersonSummarySnapshot),
+      operationalPolicy: {
+        deviceFreshnessHours: deviceFreshnessMs === undefined ? null : deviceFreshnessMs / (60 * 60 * 1000),
+      },
     };
   }
 

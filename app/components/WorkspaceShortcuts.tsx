@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { BellRing } from 'lucide-react';
+import { BellRing, Users } from 'lucide-react';
 
 export default function WorkspaceShortcuts() {
   const pathname = usePathname();
@@ -19,9 +19,9 @@ export default function WorkspaceShortcuts() {
   }, [pathname]);
 
   if (!signedIn || pathname.startsWith('/demo') || pathname.startsWith('/recover')) return null;
-  if (pathname.startsWith('/attention')) return null;
 
-  return <Link className="workspace-shortcut" href="/attention/" aria-label="Open operational attention queue">
-    <BellRing size={17}/><span>Operational attention</span>
-  </Link>;
+  return <nav className="workspace-shortcuts" aria-label="Workspace shortcuts">
+    {!pathname.startsWith('/people') && <Link className="workspace-shortcut" href="/people/" aria-label="Open people directory"><Users size={17}/><span>People</span></Link>}
+    {!pathname.startsWith('/attention') && <Link className="workspace-shortcut" href="/attention/" aria-label="Open operational attention queue"><BellRing size={17}/><span>Operational attention</span></Link>}
+  </nav>;
 }

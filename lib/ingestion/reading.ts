@@ -3,7 +3,8 @@ export type AutomaticReading = {
  source: string; sourceEventId: string; deviceId: string; measuredAt: string;
  measurement: {kind:'blood-pressure';systolic:number;diastolic:number;unit:'mmHg';pulse?:number} |
  {kind:'glucose';value:number;unit:'mmol/L'|'mg/dL'} |
- {kind:'spo2';value:number;unit:'%';pulse?:number};
+ {kind:'spo2';value:number;unit:'%';pulse?:number} |
+ {kind:'weight';value:number;unit:'kg'};
 };
 export type ReadingResult={ok:true;reading:AutomaticReading}|{ok:false;reason:string};
 function validTimestamp(value: unknown): value is string {
@@ -34,13 +35,17 @@ export function validateAutomaticReading(input:unknown):ReadingResult{
   if(!['mmol/L','mg/dL'].includes(String(m.unit))||!numeric(m.value))return fail('Glucose requires a value and an explicit supported unit.');
  }else if(m.kind==='spo2'){
   if(m.unit!=='%'||!numeric(m.value)||(m.value as number)>100)return fail('SpO2 must be a percentage from 0 to 100.');
+ }else if(m.kind==='weight'){
+  if(m.unit!=='kg'||!numeric(m.value)||(m.value as number)>500)return fail('Weight must be a value in kilograms from 0 to 500.');
  }else return fail('Unsupported measurement kind.');
  // Structure validation is not authentication, device verification or clinical interpretation.
  const measurement: AutomaticReading['measurement'] = m.kind === 'blood-pressure'
   ? {kind:'blood-pressure',systolic:m.systolic as number,diastolic:m.diastolic as number,unit:'mmHg',...(m.pulse===undefined?{}:{pulse:m.pulse as number})}
   : m.kind === 'glucose'
   ? {kind:'glucose',value:m.value as number,unit:m.unit as 'mmol/L'|'mg/dL'}
-  : {kind:'spo2',value:m.value as number,unit:'%',...(m.pulse===undefined?{}:{pulse:m.pulse as number})};
+  : m.kind === 'spo2'
+  ? {kind:'spo2',value:m.value as number,unit:'%',...(m.pulse===undefined?{}:{pulse:m.pulse as number})}
+  : {kind:'weight',value:m.value as number,unit:'kg'};
  return {ok:true,reading:{source:data.source,sourceEventId:data.sourceEventId as string,deviceId:data.deviceId as string,measuredAt:data.measuredAt,measurement}};
 }
 export function readingIdentity(reading:AutomaticReading):string{return JSON.stringify([reading.source,reading.deviceId,reading.sourceEventId]);}

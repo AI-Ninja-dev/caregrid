@@ -1,6 +1,5 @@
 import { NextRequest } from 'next/server';
-import { timingSafeEqual } from 'node:crypto';
-import { AppError, hash } from '../../../lib/server/store';
+import { AppError } from '../../../lib/server/store';
 import { store } from '../../../lib/server/live-store';
 import { body, failure, json, sameOrigin, sessionCookie } from '../../../lib/server/http';
 export const runtime = 'nodejs';
@@ -14,9 +13,6 @@ export async function POST(request: NextRequest) {
     const data = await body(request);
     if (data.action === 'recover') { store().recover(data.recoveryToken, data.password); return json({ ok: true }); }
     if (data.action === 'setup') {
-      const setup = process.env.CAREGRID_SETUP_TOKEN;
-      const local = process.env.CAREGRID_ALLOW_LOCAL_SETUP === 'true' && ['localhost', '127.0.0.1', '[::1]'].includes(request.nextUrl.hostname);
-      if (!local && (!setup || !timingSafeEqual(Buffer.from(hash(String(data.setupToken || ''))), Buffer.from(hash(setup))))) throw new AppError('A workspace setup token from your server administrator is required.', 403);
       store().setup(data.email, data.password);
     } else if (data.action !== 'login') throw new AppError('Unsupported authentication action.');
     const session = store().login(data.email, data.password);

@@ -18,6 +18,18 @@ test('clinical store rejects programme and pillar mismatches', () => {
   assert.throws(() => store.mutate(admin, { action: 'person', name: 'Example Person', town: 'Cape Town', consent: true, pillar: 'Stroke prevention', programme: 'Glucose monitoring' }), AppError);
 });
 
+test('clinical pathway assignments can be corrected without recreating a person', () => {
+  const store = new ClinicalStore(':memory:');
+  const admin = store.setup('admin@example.com', 'very-long-test-password');
+  store.mutate(admin, { action: 'person', name: 'Legacy Person', town: 'Cape Town', consent: true });
+  const before = store.snapshot(admin).people[0] as Record<string, unknown>;
+  store.mutate(admin, { action: 'person-clinical', id: before.id, pillar: 'Stroke prevention', programme: 'Risk-factor monitoring' });
+  const after = store.snapshot(admin).people[0] as Record<string, unknown>;
+  assert.equal(after.id, before.id);
+  assert.equal(after.pillar, 'Stroke prevention');
+  assert.equal(after.programme, 'Risk-factor monitoring');
+});
+
 test('new care plans inherit a person pillar when the form omits it', () => {
   const store = new ClinicalStore(':memory:');
   const admin = store.setup('admin@example.com', 'very-long-test-password');

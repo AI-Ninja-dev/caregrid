@@ -5,6 +5,7 @@ import { buildPersonSummaries, type PersonSummarySnapshot } from '../person-summ
 import { AppError, Store, field, type User } from './store.ts';
 import { migrateClinicalPillars } from './schema.ts';
 import { migrateEnterpriseCareOperations } from './enterprise-schema.ts';
+import { enterpriseMutate, enterpriseSnapshot } from './enterprise-operations.ts';
 import { legacyProgrammeForPillar, migrationDefaults, validateClinicalPillar, validateProgramme } from './clinical.ts';
 
 function clinicalPillar(value: unknown) {
@@ -35,6 +36,7 @@ export class ClinicalStore extends Store {
     const deviceFreshnessMs = deviceFreshnessMsFromHours(process.env.CAREGRID_DEVICE_FRESHNESS_HOURS);
     return {
       ...snapshot,
+      ...enterpriseSnapshot(this.db),
       attention: buildOperationalAttention(snapshot as unknown as AttentionSnapshot, { deviceFreshnessMs }),
       personSummaries: buildPersonSummaries(snapshot as unknown as PersonSummarySnapshot),
       operationalPolicy: {
@@ -52,8 +54,8 @@ export class ClinicalStore extends Store {
         const pillar = clinicalPillar(data.pillar ?? defaults.pillar);
         const programme = clinicalProgramme(pillar, data.programme ?? legacyProgrammeForPillar(pillar));
         const id = randomUUID();
-        const now = new Date().toISOString();
-        this.db.prepare('INSERT INTO people(id,name,town,consent_at,active,pillar,programme) VALUES(?,?,?,?,1,?,?)').run(id, field(data.name, 'Name'), field(data.town, 'Town'), now, pillar, programme);
+        const createdAt = new Date().toISOString();
+        this.db.prepare('INSERT INTO people(id,name,town,consent_at,active,pillar,programme) VALUES(?,?,?,?,1,?,?)').run(id, field(data.name, 'Name'), field(data.town, 'Town'), createdAt, pillar, programme);
         this.audit(user.id, 'person', id);
         return {};
       });
@@ -74,7 +76,7 @@ export class ClinicalStore extends Store {
     if (data.action === 'plan' || data.action === 'plan-update') {
       return this.transaction(() => {
         const id = randomUUID();
-        const now = new Date().toISOString();
+        const createdAt = new Date().toISOString();
         const existing = data.action === 'plan-update' ? this.planVersion(data.id, data.version) : null;
         const personId = existing ? String(existing.person_id) : field(data.personId, 'Person');
         if (!existing || data.status !== 'Paused') this.activePerson(personId);
@@ -87,15 +89,17 @@ export class ClinicalStore extends Store {
         let subject: string = id;
         if (existing) {
           subject = String(existing.id);
-          this.db.prepare('UPDATE care_plans SET focus=?,pillar=?,owner=?,cadence=?,goals=?,next_review=?,status=?,version=version+1,updated_at=? WHERE id=?').run(...values, now, subject);
+          this.db.prepare('UPDATE care_plans SET focus=?,pillar=?,owner=?,cadence=?,goals=?,next_review=?,status=?,version=version+1,updated_at=? WHERE id=?').run(...values, createdAt, subject);
         } else {
-          this.db.prepare('INSERT INTO care_plans(id,person_id,focus,pillar,owner,cadence,goals,next_review,status,version,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,1,?,?)').run(id, personId, ...values, now, now);
+          this.db.prepare('INSERT INTO care_plans(id,person_id,focus,pillar,owner,cadence,goals,next_review,status,version,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,1,?,?)').run(id, personId, ...values, createdAt, createdAt);
         }
         this.audit(user.id, String(data.action), subject);
         return {};
       });
     }
 
+    const enterprise = this.transaction(() => enterpriseMutate(this.db, user, data, (action, subject) => this.audit(user.id, action, subject)));
+    if (enterprise !== null) return enterprise;
     return super.mutate(user, data);
   }
 }

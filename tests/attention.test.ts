@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { buildOperationalAttention } from '../lib/attention.ts';
+import { buildOperationalAttention, deviceFreshnessMsFromHours } from '../lib/attention.ts';
 
 const now = new Date('2026-09-17T10:00:00+02:00');
 
@@ -54,4 +54,13 @@ test('device staleness is not inferred until an operational freshness policy is 
 test('invalid freshness policies are rejected instead of silently changing queue semantics', () => {
   assert.throws(() => buildOperationalAttention(snapshot(), { now, deviceFreshnessMs: 0 }), /positive finite number/);
   assert.throws(() => buildOperationalAttention(snapshot(), { now, deviceFreshnessMs: Number.NaN }), /positive finite number/);
+});
+
+test('freshness hours remain opt-in and convert explicitly to milliseconds', () => {
+  assert.equal(deviceFreshnessMsFromHours(undefined), undefined);
+  assert.equal(deviceFreshnessMsFromHours(''), undefined);
+  assert.equal(deviceFreshnessMsFromHours('24'), 24 * 60 * 60 * 1000);
+  assert.equal(deviceFreshnessMsFromHours('0.5'), 30 * 60 * 1000);
+  assert.throws(() => deviceFreshnessMsFromHours('0'), /positive number of hours/);
+  assert.throws(() => deviceFreshnessMsFromHours('not-a-number'), /positive number of hours/);
 });

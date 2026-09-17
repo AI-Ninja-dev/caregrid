@@ -55,7 +55,7 @@ export class ClinicalStore extends Store {
         if (!this.db.prepare('SELECT id FROM users WHERE id=? AND active=1').get(owner)) throw new AppError('Select an active plan owner.');
         if (!['Active', 'Needs review', 'Paused'].includes(String(data.status))) throw new AppError('Choose a valid plan status.');
         const values = [field(data.focus, 'Plan focus'), pillar, owner, field(data.cadence, 'Review cadence'), field(data.goals, 'Goals', 2000), nextReview(data.nextReview), String(data.status)];
-        let subject = id;
+        let subject: string = id;
         if (existing) {
           subject = String(existing.id);
           this.db.prepare('UPDATE care_plans SET focus=?,pillar=?,owner=?,cadence=?,goals=?,next_review=?,status=?,version=version+1,updated_at=? WHERE id=?').run(...values, now, subject);

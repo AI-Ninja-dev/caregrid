@@ -30,6 +30,13 @@ export type AttentionOptions = {
   timeZone?: string;
 };
 
+export function deviceFreshnessMsFromHours(value: string | undefined): number | undefined {
+  if (value === undefined || value.trim() === '') return undefined;
+  const hours = Number(value);
+  if (!Number.isFinite(hours) || hours <= 0) throw new Error('CAREGRID_DEVICE_FRESHNESS_HOURS must be a positive number of hours.');
+  return hours * 60 * 60 * 1000;
+}
+
 function localDate(date: Date, timeZone: string) {
   const parts = new Intl.DateTimeFormat('en-CA', {
     timeZone,

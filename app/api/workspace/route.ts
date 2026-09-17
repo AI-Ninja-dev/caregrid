@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { store } from '../../../lib/server/store';
+import { store } from '../../../lib/server/live-store';
 import { body, currentUser, failure, json, sameOrigin } from '../../../lib/server/http';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';

@@ -1,0 +1,43 @@
+[
+  {
+    "name": "Platform admin preserves the existing workspace and creates an isolated second tenant",
+    "sanity": true,
+    "viewport": "desktop",
+    "covers": ["legacy workspace migration", "backend-enforced tenant isolation", "POST /api/tenants", "platform admin tenant switcher", "tenant-specific dashboard"],
+    "description": "Verifies existing CareGrid data is retained under the primary tenant and a platform admin can create and switch to an isolated second tenant.",
+    "steps": ["Sign in as the existing administrator after the upgrade", "Open Tenants", "Create a second tenant with its own tenant-admin credentials", "Use the tenant switcher to open the new tenant"],
+    "expected": "The original workspace remains intact, the second tenant opens as a separate workspace, and records from the original tenant are not shown in the second tenant."
+  },
+  {
+    "name": "Tenant admin creates caregiver and patient roles with scoped capabilities",
+    "viewport": "desktop",
+    "covers": ["POST /api/users", "role-based access control", "tenant admin", "caregiver", "patient", "patient-to-person linkage", "backend permission enforcement"],
+    "description": "Verifies tenant administrators can create care-team and patient accounts while role permissions control what each account can change.",
+    "steps": ["Create a patient record", "Open Users", "Create a caregiver account", "Create a patient account linked to that patient", "Sign in as the patient"],
+    "expected": "The patient sees only their own care context and cannot manage tenants, users, branding, people or devices, while allowed patient actions remain available."
+  },
+  {
+    "name": "Patient generates revocable loved-one read-only access",
+    "viewport": "mobile",
+    "covers": ["POST /api/shares", "DELETE /api/shares/:id", "patient-generated viewer", "loved-one read-only role", "viewer scoping", "sharing audit"],
+    "description": "Verifies a patient can create a loved-one viewer account that is restricted to the patient's information and can later be revoked.",
+    "steps": ["Sign in as a patient", "Open Sharing", "Generate loved-one access for an email", "Sign in with the generated viewer credentials", "Confirm editing controls are absent", "Sign back in as the patient and revoke the share"],
+    "expected": "The loved-one account can monitor the linked patient but cannot edit data, and access is removed after revocation."
+  },
+  {
+    "name": "Caregiver uses mobile patient-detail dropdowns without losing the full patient workspace",
+    "viewport": "mobile",
+    "covers": ["caregiver primary dashboard", "patient ID drill-down", "patient profile", "optional patient details", "caregiver patient-profile editing", "mobile patient-detail dropdowns", "dark mode", "premium glossy UI design system", "full responsive CareGrid redesign", "floating glass navigation", "modern dashboard hierarchy", "modern responsive surfaces", "accessible focus states", "safe startup with stale local session data", "patient vital summary", "patient trend charts", "patient devices", "patient readings", "patient tasks", "patient sharing", "patient linked accounts", "patient audit history", "interactive multicolor trends"],
+    "description": "Verifies the patient workspace remains complete while mobile users can expand patient-detail sections as compact dropdowns.",
+    "steps": ["Sign in as a caregiver or tenant admin on mobile", "Open Overview and select a patient", "Expand Profile & medical background and save optional details", "Expand Latest vitals, Health trends, Care details and Complete timeline", "Toggle dark mode and confirm the dropdown workflow remains usable"],
+    "expected": "Patient-detail sections are collapsible on mobile, each section reveals the same patient information and editing controls when expanded, and the desktop-oriented data model and existing CareGrid functionality remain unchanged."
+  },
+  {
+    "name": "Tenant admin configures core and optional dashboard presets with circular trends",
+    "viewport": "desktop",
+    "covers": ["PUT /api/dashboard-config", "tenant dashboard configuration", "core four clinical dashboard options", "assisted living optional dashboard", "fitness optional dashboard", "dashboard default persistence", "circular monitoring trends", "dashboard view switcher"],
+    "description": "Verifies all four CareGrid clinical pillars remain dashboard choices, optional Assisted Living and Fitness modes can be enabled, and the Overview can display circular operational trends without replacing existing widgets.",
+    "steps": ["Sign in as a tenant admin", "Open Dashboards", "Confirm Diabetes, Hypertension, Cardiovascular health and Stroke prevention are always available", "Enable Assisted Living and Fitness", "Choose Cardiovascular health as the default and save", "Return to Overview and switch among available dashboard views"],
+    "expected": "The selected default dashboard persists for the tenant, optional dashboards appear only when enabled, and the existing CareGrid dashboard remains intact with added preset context and circular monitoring/completion trends."
+  }
+]

@@ -1,3 +1,4 @@
+import { migrateThingsBoard } from '../thingsboard/alarms.ts';
 import { randomUUID } from 'node:crypto';
 import { resolve } from 'node:path';
 import { buildOperationalAttention, deviceFreshnessMsFromHours, type AttentionSnapshot } from '../attention.ts';
@@ -29,6 +30,7 @@ export class ClinicalStore extends Store {
     super(path);
     migrateClinicalPillars(this.db);
     migrateEnterpriseCareOperations(this.db);
+    migrateThingsBoard(this);
   }
 
   snapshot(user: User) {
@@ -36,6 +38,7 @@ export class ClinicalStore extends Store {
     const deviceFreshnessMs = deviceFreshnessMsFromHours(process.env.CAREGRID_DEVICE_FRESHNESS_HOURS);
     return {
       ...snapshot,
+      thingsboardAlarms: this.db.prepare("SELECT thingsboard_alarms.id,device_id,person_id,type,severity,status,updated_ts,reviewed_at,reviewed_by FROM thingsboard_alarms JOIN people ON people.id=thingsboard_alarms.person_id WHERE people.active=1 ORDER BY updated_ts DESC LIMIT 500").all(),
       ...enterpriseSnapshot(this.db),
       attention: buildOperationalAttention(snapshot as unknown as AttentionSnapshot, { deviceFreshnessMs }),
       personSummaries: buildPersonSummaries(snapshot as unknown as PersonSummarySnapshot),

@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit",
     "test": "node --experimental-strip-types --test tests/*.test.ts",
     "test:browser": "playwright test",
-    "backup": "node --env-file-if-exists=.env.local --experimental-strip-types scripts/backup.ts"
+    "backup": "node --env-file-if-exists=.env.local --experimental-strip-types scripts/backup.ts",
+    "thingsboard:sync": "node --env-file-if-exists=.env.local --experimental-strip-types scripts/thingsboard-sync.ts"
   },
   "dependencies": {
     "lucide-react": "^0.468.0",

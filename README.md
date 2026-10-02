@@ -95,3 +95,7 @@ Browser tests start an isolated server on port 3010 and use a separate test data
 ## Release boundaries
 
 This is a functional single-workspace release suitable for controlled technical pilot preparation, not a completed clinical monitoring service. Vendor adapters, native Bluetooth pairing, clinical measurement alert rules, patient notifications, emergency response, MFA/SSO, automated retention and deletion are not implemented. Reports show the most recent 500 readings; the database retains older records. Validate hosting, access controls, privacy processes, backups, clinical governance and device delivery before using real patient information.
+
+## ThingsBoard device engine
+
+CareGrid supports authenticated ThingsBoard telemetry and source alarms, with a REST recovery worker. Patient records and care workflows stay in CareGrid. See [ThingsBoard setup](docs/THINGSBOARD-INTEGRATION.md) for configuration, supported units, alarm delivery and deployment boundaries.

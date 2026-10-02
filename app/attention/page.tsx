@@ -6,7 +6,8 @@ import { Activity, CheckCircle2, ClipboardCheck, Radio, UserRoundCheck } from 'l
 import type { OperationalAttentionItem } from '../../lib/attention';
 
 type Person = { id: string; name: string; pillar?: string; programme?: string };
-type Workspace = { people: Person[]; attention: OperationalAttentionItem[]; operationalPolicy?: { deviceFreshnessHours: number | null } };
+type SourceAlarm = { id:string; person_id:string; type:string; severity:string; status:string; updated_ts:number; reviewed_at:string|null };
+type Workspace = { thingsboardAlarms?:SourceAlarm[]; people: Person[]; attention: OperationalAttentionItem[]; operationalPolicy?: { deviceFreshnessHours: number | null } };
 
 const iconFor = (kind: OperationalAttentionItem['kind']) => {
   if (kind === 'device-awaiting-reading' || kind === 'device-stale') return Radio;
@@ -54,6 +55,7 @@ export default function AttentionPage() {
     {status && <section className="panel"><p role="status">{status}</p><Link href="/">Open CareGrid</Link></section>}
 
     {workspace && <>
+      <section className="panel"><h2>ThingsBoard source alarms</h2><p>Provider alarms require care-team review. Review here records follow-up in CareGrid; ThingsBoard retains its own alarm state.</p>{(workspace.thingsboardAlarms || []).filter(alarm => !alarm.reviewed_at && !alarm.status.startsWith('CLEARED')).map(alarm => <article key={alarm.id}><h3>{alarm.type}</h3><p>{person(alarm.person_id)?.name} · {alarm.severity} · {alarm.status}</p><Link href={`/people/${alarm.person_id}/`}>Patient record</Link><button className="secondary" onClick={async () => { try { const response=await fetch('/api/thingsboard/alarms/', {method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:alarm.id,updatedTs:alarm.updated_ts})}); const data=await response.json();if(!response.ok)throw new Error(data.error);setWorkspace(previous=>previous?{...previous,thingsboardAlarms:previous.thingsboardAlarms?.map(item=>item.id===alarm.id?{...item,reviewed_at:new Date().toISOString()}:item)}:previous); }catch(error){setStatus((error as Error).message);} }}>Mark reviewed</button></article>)}{!(workspace.thingsboardAlarms || []).some(alarm => !alarm.reviewed_at && !alarm.status.startsWith('CLEARED')) && <p>No unreviewed active source alarms.</p>}</section>
       <div className="metrics">
         <article><span>Operational items</span><strong>{workspace.attention.length}</strong><small>Derived from current stored records</small></article>
         <article><span>People represented</span><strong>{new Set(workspace.attention.map(item => item.personId)).size}</strong><small>Only active monitoring records are included</small></article>

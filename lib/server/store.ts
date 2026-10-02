@@ -141,9 +141,10 @@ export class Store {
         else { if (typeof data.enabled !== 'boolean') throw new AppError('Choose a valid status.'); this.db.prepare('UPDATE integrations SET enabled=? WHERE id=?').run(Number(data.enabled), subject); }
       } else if (data.action === 'device') {
         subject = field(data.id, 'Device ID', 200);
+        if (data.adapterId === 'thingsboard-adapter' && !/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(subject)) throw new AppError('Use the ThingsBoard device UUID.');
         this.activePerson(data.personId);
         if (!this.db.prepare('SELECT id FROM integrations WHERE id=? AND enabled=1').get(field(data.adapterId, 'Adapter'))) throw new AppError('Select an enabled integration.');
-        if (!['blood-pressure', 'glucose', 'spo2'].includes(String(data.kind))) throw new AppError('Choose a supported measurement.');
+        if (!['blood-pressure', 'glucose', 'continuous-glucose', 'spo2', 'pulse', 'weight', 'temperature'].includes(String(data.kind))) throw new AppError('Choose a supported measurement.');
         if (this.db.prepare('SELECT id FROM devices WHERE id=?').get(subject)) throw new AppError('Device ID already registered. Retire the existing assignment and use a new gateway device ID for reassignment.', 409);
         this.db.prepare('INSERT INTO devices VALUES(?,?,?,?,?,?,1)').run(subject, field(data.label, 'Device label'), String(data.personId), String(data.adapterId), String(data.kind), now);
       } else if (data.action === 'device-status') {
@@ -247,9 +248,12 @@ export class Store {
   activePerson(id: unknown) {
     if (!this.db.prepare('SELECT id FROM people WHERE id=? AND active=1').get(field(id, 'Person'))) throw new AppError('Select an active person with monitoring consent.');
   }
-  ingest(adapterId: string, secret: string, input: unknown) {
+  authenticateIntegration(adapterId: string, secret: string) {
     const integration = this.db.prepare('SELECT * FROM integrations WHERE id=? AND enabled=1').get(adapterId) as Row | undefined;
     if (!integration || !timingSafeEqual(Buffer.from(String(integration.secret), 'hex'), Buffer.from(hash(secret), 'hex'))) throw new AppError('Integration credentials are invalid.', 401);
+  }
+  ingest(adapterId: string, secret: string, input: unknown) {
+    this.authenticateIntegration(adapterId, secret);
     this.limit(`ingest:${adapterId}`, 600, 60_000);
     return this.transaction(() => {
       const devices = this.db.prepare('SELECT devices.* FROM devices JOIN people ON people.id=devices.person_id WHERE adapter_id=? AND enabled=1 AND people.active=1').all(adapterId);

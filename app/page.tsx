@@ -765,7 +765,11 @@ export default function CareGrid() {
                       Measurement
                       <select name='kind'>
                         <option value='blood-pressure'>Blood pressure</option>
-                        <option value='glucose'>Glucose / CGM</option>
+                        <option value='glucose'>Glucose</option>
+                        <option value='continuous-glucose'>Continuous glucose / CGM</option>
+                        <option value='pulse'>Pulse</option>
+                        <option value='weight'>Weight</option>
+                        <option value='temperature'>Temperature</option>
                         <option value='spo2'>SpO2</option>
                       </select>
                     </label>

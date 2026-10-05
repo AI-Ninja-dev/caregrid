@@ -15,7 +15,7 @@ test('first administrator opens the adaptive RPM dashboard without a token', asy
   await page.getByRole('button', { name: 'Create administrator' }).click();
   await expect(page).toHaveURL(/\/dashboard\/?$/);
   await expect(page.getByRole('heading', { name: 'Care, visible in real time.' })).toBeVisible();
-  await expect(page.getByText('Patient monitoring')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Patient monitoring', exact: true })).toBeVisible();
   await expect(page.getByText('Connectivity health')).toBeVisible();
   expect((await page.request.get('/api/dashboard/')).status()).toBe(200);
 

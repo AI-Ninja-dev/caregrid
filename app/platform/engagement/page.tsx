@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useState, type FormEvent } from 'react';
-import { Activity, ArrowLeft, BellRing, BookOpenCheck, CalendarDays, HeartHandshake } from 'lucide-react';
+import { ArrowLeft, BellRing, BookOpenCheck, CalendarDays, HeartHandshake } from 'lucide-react';
 
 type Person={id:string;name:string};type Row=Record<string,unknown>;type Snapshot={people:Person[];notifications:Row[];education:Row[];educationAssignments:Row[];consents:Row[];appointments:Row[];contacts:Row[]};
 async function req(method='GET',body?:unknown){const response=await fetch('/api/workspace/',{method,cache:'no-store',headers:body?{'Content-Type':'application/json'}:undefined,body:body?JSON.stringify(body):undefined});const data=await response.json();if(!response.ok)throw new Error(data.error||'Request failed.');return data;}

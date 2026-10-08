@@ -220,10 +220,15 @@ export default function CareGrid() {
 
   useEffect(() => {
     const sync = () => {
+      const hash = window.location.hash;
+      // Ignore ordinary in-page anchors (including the accessibility skip link).
+      if (hash && !hash.startsWith('#/')) return;
       const found = navigation.find(
-        ([name]) => `#/${name.toLowerCase().replace(/ /g, '-')}` === location.hash,
+        ([name]) => `#/${name.toLowerCase().replace(/ /g, '-')}` === hash,
       );
       setView(found?.[0] || 'Overview');
+      setPersonId('');
+      setMessage('');
     };
 
     sync();
@@ -232,10 +237,13 @@ export default function CareGrid() {
   }, []);
 
   function go(next: View) {
-    setView(next);
-    location.hash = `/${next.toLowerCase().replace(/ /g, '-')}`;
-    setPersonId('');
-    setMessage('');
+    const hash = `#/${next.toLowerCase().replace(/ /g, '-')}`;
+    // The hashchange listener owns route state, including browser Back/Forward.
+    if (window.location.hash === hash) {
+      setView(next);
+      return;
+    }
+    window.location.hash = hash;
   }
 
   async function mutate(payload: Record<string, unknown>) {

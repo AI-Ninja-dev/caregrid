@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useState, type FormEvent } from 'react';
-import { Activity, ArrowLeft, PackageCheck, Radio, Truck } from 'lucide-react';
+import { ArrowLeft, PackageCheck, Radio, Truck } from 'lucide-react';
 
 type Row=Record<string,unknown>;type Person={id:string;name:string};
 type Snapshot={people:Person[];deviceCatalogue:Row[];deviceInventory:Row[];deviceAssignments:Row[];deviceShipments:Row[]};
